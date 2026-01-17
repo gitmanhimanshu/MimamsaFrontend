@@ -3,32 +3,34 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingVi
 import API from "../api";
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
-export default function LoginScreen({ onSwitchToRegister, onLoginSuccess, onForgotPassword }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export default function VerifyOTPScreen({ email, onBack, onOTPVerified }) {
+  const [otp, setOTP] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
-  const login = async () => {
-    if (!email || !password) {
-      alert("Please fill all fields");
+  const verifyOTP = async () => {
+    if (!otp || otp.length !== 6) {
+      alert("Please enter 6-digit OTP");
       return;
     }
 
     setLoading(true);
     try {
-      const res = await API.post("/app/login/", {
-        email,
-        password,
-      });
-      onLoginSuccess(res.data);
+      await API.post("/app/forgot-password/verify-otp/", { email, otp });
+      onOTPVerified(otp);
     } catch (err) {
-      const errorMsg = err.response?.data?.error || 
-        (err.response ? "Login failed. Please check credentials." : 
-        `Network Error: ${err.message}`);
+      const errorMsg = err.response?.data?.error || "Invalid OTP";
       alert(errorMsg);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resendOTP = async () => {
+    try {
+      await API.post("/app/forgot-password/send-otp/", { email });
+      alert("✓ OTP resent to your email!");
+    } catch (err) {
+      alert("Failed to resend OTP");
     }
   };
 
@@ -40,73 +42,53 @@ export default function LoginScreen({ onSwitchToRegister, onLoginSuccess, onForg
         style={styles.container}
       >
         <View style={styles.content}>
+          <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
+            <Text style={styles.backButtonText}>← Back</Text>
+          </TouchableOpacity>
+
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Text style={styles.icon}>📚</Text>
+              <Text style={styles.icon}>📧</Text>
             </View>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in to continue reading</Text>
+            <Text style={styles.title}>Verify OTP</Text>
+            <Text style={styles.subtitle}>
+              Enter the 6-digit code sent to{'\n'}
+              <Text style={styles.email}>{email}</Text>
+            </Text>
           </View>
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email Address</Text>
+              <Text style={styles.label}>OTP Code</Text>
               <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>✉️</Text>
+                <Text style={styles.inputIcon}>🔢</Text>
                 <TextInput 
-                  placeholder="your@email.com" 
+                  placeholder="000000" 
                   placeholderTextColor={COLORS.textMuted}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
+                  value={otp}
+                  onChangeText={setOTP}
+                  keyboardType="number-pad"
+                  maxLength={6}
                   style={styles.input}
                 />
-              </View>
-            </View>
-
-            <View style={styles.inputContainer}>
-              <View style={styles.labelRow}>
-                <Text style={styles.label}>Password</Text>
-                <TouchableOpacity onPress={onForgotPassword} activeOpacity={0.7}>
-                  <Text style={styles.forgotLink}>Forgot Password?</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>🔒</Text>
-                <TextInput 
-                  placeholder="Enter your password" 
-                  placeholderTextColor={COLORS.textMuted}
-                  value={password}
-                  secureTextEntry={!showPassword}
-                  onChangeText={setPassword}
-                  style={styles.input}
-                />
-                <TouchableOpacity 
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeButton}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
-                </TouchableOpacity>
               </View>
             </View>
 
             <TouchableOpacity 
               style={[styles.button, loading && styles.buttonDisabled]} 
-              onPress={login}
+              onPress={verifyOTP}
               disabled={loading}
               activeOpacity={0.8}
             >
               <Text style={styles.buttonText}>
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? "Verifying..." : "Verify OTP"}
               </Text>
             </TouchableOpacity>
 
             <View style={styles.footer}>
-              <Text style={styles.footerText}>Don't have an account? </Text>
-              <TouchableOpacity onPress={onSwitchToRegister} activeOpacity={0.7}>
-                <Text style={styles.link}>Create Account</Text>
+              <Text style={styles.footerText}>Didn't receive code? </Text>
+              <TouchableOpacity onPress={resendOTP} activeOpacity={0.7}>
+                <Text style={styles.link}>Resend OTP</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -123,8 +105,16 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
     padding: SPACING.xl,
+    paddingTop: 60,
+  },
+  backButton: {
+    marginBottom: SPACING.xl,
+  },
+  backButtonText: {
+    color: COLORS.primary,
+    fontSize: 16,
+    fontWeight: '700',
   },
   header: {
     marginBottom: SPACING.xxl,
@@ -151,6 +141,12 @@ const styles = StyleSheet.create({
   subtitle: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  email: {
+    color: COLORS.primary,
+    fontWeight: '700',
   },
   form: {
     width: '100%',
@@ -158,21 +154,11 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: SPACING.lg,
   },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
   label: {
     ...TYPOGRAPHY.caption,
     fontWeight: '600',
     color: COLORS.textSecondary,
-  },
-  forgotLink: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.primary,
-    fontWeight: '700',
+    marginBottom: SPACING.sm,
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -191,14 +177,10 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     padding: SPACING.md,
-    fontSize: 16,
+    fontSize: 24,
     color: COLORS.textPrimary,
-  },
-  eyeButton: {
-    padding: SPACING.sm,
-  },
-  eyeIcon: {
-    fontSize: 20,
+    letterSpacing: 8,
+    fontWeight: '700',
   },
   button: {
     backgroundColor: COLORS.primary,

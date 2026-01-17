@@ -2,6 +2,9 @@ import React, { useState, useEffect } from "react";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import LoginScreen from "../screens/LoginScreen";
 import RegisterScreen from "../screens/RegisterScreen";
+import ForgotPasswordScreen from "../screens/ForgotPasswordScreen";
+import VerifyOTPScreen from "../screens/VerifyOTPScreen";
+import ResetPasswordScreen from "../screens/ResetPasswordScreen";
 import HomeScreen from "../screens/HomeScreen";
 import BookDetailScreen from "../screens/BookDetailScreen";
 import AdminPanelScreen from "../screens/AdminPanelScreen";
@@ -9,6 +12,8 @@ import AddBookScreen from "../screens/AddBookScreen";
 import ManageAuthorsScreen from "../screens/ManageAuthorsScreen";
 import ReaderScreen from "../screens/ReaderScreen";
 import ProfileScreen from "../screens/ProfileScreen";
+import PoemsScreen from "../screens/PoemsScreen";
+import ManagePoemsScreen from "../screens/ManagePoemsScreen";
 import SplashScreen from "../screens/SplashScreen";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 
@@ -30,6 +35,11 @@ export default function RootLayout() {
   const [navigationStack, setNavigationStack] = useState<Array<{screen: string, data?: any}>>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showSplash, setShowSplash] = useState(true);
+  
+  // Forgot Password Flow
+  const [forgotPasswordFlow, setForgotPasswordFlow] = useState<'none' | 'email' | 'otp' | 'reset'>('none');
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotOTP, setForgotOTP] = useState('');
 
   // Load user session on app start
   useEffect(() => {
@@ -70,6 +80,7 @@ export default function RootLayout() {
   const handleLoginSuccess = async (userData: UserData) => {
     setUser(userData);
     setCurrentScreen("Home");
+    setForgotPasswordFlow('none');
     await saveUserSession(userData);
   };
 
@@ -82,6 +93,7 @@ export default function RootLayout() {
     setUser(null);
     setShowLogin(true);
     setCurrentScreen("Home");
+    setForgotPasswordFlow('none');
     await clearUserSession();
   };
 
@@ -106,6 +118,35 @@ export default function RootLayout() {
     }
   };
 
+  // Forgot Password Handlers
+  const handleForgotPassword = () => {
+    setForgotPasswordFlow('email');
+  };
+
+  const handleOTPSent = (email: string) => {
+    setForgotEmail(email);
+    setForgotPasswordFlow('otp');
+  };
+
+  const handleOTPVerified = (otp: string) => {
+    setForgotOTP(otp);
+    setForgotPasswordFlow('reset');
+  };
+
+  const handlePasswordReset = () => {
+    setForgotPasswordFlow('none');
+    setForgotEmail('');
+    setForgotOTP('');
+    setShowLogin(true);
+  };
+
+  const handleBackToLogin = () => {
+    setForgotPasswordFlow('none');
+    setForgotEmail('');
+    setForgotOTP('');
+    setShowLogin(true);
+  };
+
   // Show loading screen while checking session
   if (isLoading || showSplash) {
     return showSplash ? (
@@ -119,18 +160,59 @@ export default function RootLayout() {
 
   // If user is not logged in, show auth screens
   if (!user) {
+    // Forgot Password Flow
+    if (forgotPasswordFlow === 'email') {
+      return (
+        <ForgotPasswordScreen 
+          onBack={handleBackToLogin}
+          onOTPSent={handleOTPSent}
+        />
+      );
+    }
+    
+    if (forgotPasswordFlow === 'otp') {
+      return (
+        <VerifyOTPScreen 
+          email={forgotEmail}
+          onBack={() => setForgotPasswordFlow('email')}
+          onOTPVerified={handleOTPVerified}
+        />
+      );
+    }
+    
+    if (forgotPasswordFlow === 'reset') {
+      return (
+        <ResetPasswordScreen 
+          email={forgotEmail}
+          otp={forgotOTP}
+          onPasswordReset={handlePasswordReset}
+        />
+      );
+    }
+    
+    // Normal Login/Register Flow
     return showLogin ? 
       <LoginScreen 
         onSwitchToRegister={() => setShowLogin(false)} 
         onLoginSuccess={handleLoginSuccess}
+        onForgotPassword={handleForgotPassword}
       /> : 
-      <RegisterScreen onSwitchToLogin={() => setShowLogin(true)} />;
+      <RegisterScreen 
+        onSwitchToLogin={() => setShowLogin(true)} 
+        onLoginSuccess={handleLoginSuccess}
+      />;
   }
 
   // User is logged in, show app screens
   switch (currentScreen) {
     case "Profile":
       return <ProfileScreen user={user} onBack={handleBack} onUpdateUser={handleUpdateUser} />;
+    
+    case "Poems":
+      return <PoemsScreen onBack={handleBack} userId={user.id} />;
+    
+    case "ManagePoems":
+      return <ManagePoemsScreen user={user} onBack={handleBack} />;
     
     case "BookDetail":
       return <BookDetailScreen book={screenData?.book} onBack={handleBack} onNavigate={handleNavigate} />;

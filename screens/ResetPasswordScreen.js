@@ -3,29 +3,40 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingVi
 import API from "../api";
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
-export default function LoginScreen({ onSwitchToRegister, onLoginSuccess, onForgotPassword }) {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+export default function ResetPasswordScreen({ email, otp, onPasswordReset }) {
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const login = async () => {
-    if (!email || !password) {
+  const resetPassword = async () => {
+    if (!newPassword || !confirmPassword) {
       alert("Please fill all fields");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      alert("Passwords do not match");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      alert("Password must be at least 6 characters");
       return;
     }
 
     setLoading(true);
     try {
-      const res = await API.post("/app/login/", {
+      await API.post("/app/forgot-password/reset/", {
         email,
-        password,
+        otp,
+        new_password: newPassword
       });
-      onLoginSuccess(res.data);
+      alert("✓ Password reset successfully!");
+      onPasswordReset();
     } catch (err) {
-      const errorMsg = err.response?.data?.error || 
-        (err.response ? "Login failed. Please check credentials." : 
-        `Network Error: ${err.message}`);
+      const errorMsg = err.response?.data?.error || "Failed to reset password";
       alert(errorMsg);
     } finally {
       setLoading(false);
@@ -42,73 +53,67 @@ export default function LoginScreen({ onSwitchToRegister, onLoginSuccess, onForg
         <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Text style={styles.icon}>📚</Text>
+              <Text style={styles.icon}>🔑</Text>
             </View>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in to continue reading</Text>
+            <Text style={styles.title}>Reset Password</Text>
+            <Text style={styles.subtitle}>Create a new password for your account</Text>
           </View>
 
           <View style={styles.form}>
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email Address</Text>
+              <Text style={styles.label}>New Password</Text>
               <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>✉️</Text>
+                <Text style={styles.inputIcon}>🔒</Text>
                 <TextInput 
-                  placeholder="your@email.com" 
+                  placeholder="Enter new password" 
                   placeholderTextColor={COLORS.textMuted}
-                  value={email}
-                  onChangeText={setEmail}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
+                  value={newPassword}
+                  onChangeText={setNewPassword}
+                  secureTextEntry={!showNewPassword}
                   style={styles.input}
                 />
+                <TouchableOpacity 
+                  onPress={() => setShowNewPassword(!showNewPassword)}
+                  style={styles.eyeButton}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.eyeIcon}>{showNewPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                </TouchableOpacity>
               </View>
             </View>
 
             <View style={styles.inputContainer}>
-              <View style={styles.labelRow}>
-                <Text style={styles.label}>Password</Text>
-                <TouchableOpacity onPress={onForgotPassword} activeOpacity={0.7}>
-                  <Text style={styles.forgotLink}>Forgot Password?</Text>
-                </TouchableOpacity>
-              </View>
+              <Text style={styles.label}>Confirm Password</Text>
               <View style={styles.inputWrapper}>
                 <Text style={styles.inputIcon}>🔒</Text>
                 <TextInput 
-                  placeholder="Enter your password" 
+                  placeholder="Confirm new password" 
                   placeholderTextColor={COLORS.textMuted}
-                  value={password}
-                  secureTextEntry={!showPassword}
-                  onChangeText={setPassword}
+                  value={confirmPassword}
+                  onChangeText={setConfirmPassword}
+                  secureTextEntry={!showConfirmPassword}
                   style={styles.input}
                 />
                 <TouchableOpacity 
-                  onPress={() => setShowPassword(!showPassword)}
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                   style={styles.eyeButton}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                  <Text style={styles.eyeIcon}>{showConfirmPassword ? '👁️' : '👁️‍🗨️'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
             <TouchableOpacity 
               style={[styles.button, loading && styles.buttonDisabled]} 
-              onPress={login}
+              onPress={resetPassword}
               disabled={loading}
               activeOpacity={0.8}
             >
               <Text style={styles.buttonText}>
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? "Resetting..." : "Reset Password"}
               </Text>
             </TouchableOpacity>
-
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Don't have an account? </Text>
-              <TouchableOpacity onPress={onSwitchToRegister} activeOpacity={0.7}>
-                <Text style={styles.link}>Create Account</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -151,6 +156,7 @@ const styles = StyleSheet.create({
   subtitle: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
+    textAlign: 'center',
   },
   form: {
     width: '100%',
@@ -158,21 +164,11 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: SPACING.lg,
   },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
   label: {
     ...TYPOGRAPHY.caption,
     fontWeight: '600',
     color: COLORS.textSecondary,
-  },
-  forgotLink: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.primary,
-    fontWeight: '700',
+    marginBottom: SPACING.sm,
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -217,19 +213,5 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     letterSpacing: 0.5,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: SPACING.xl,
-  },
-  footerText: {
-    color: COLORS.textSecondary,
-    fontSize: 15,
-  },
-  link: {
-    color: COLORS.primary,
-    fontSize: 15,
-    fontWeight: '700',
   },
 });

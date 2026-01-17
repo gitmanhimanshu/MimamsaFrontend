@@ -1,19 +1,25 @@
 import axios from "axios";
+import Constants from 'expo-constants';
+
+// Get API base URL from environment variables
+const API_BASE_URL = Constants.expoConfig?.extra?.apiBaseUrl || process.env.API_BASE_URL || "https://mimamsabackend.onrender.com/api";
+
+console.log("🌐 API Base URL:", API_BASE_URL);
 
 const API = axios.create({
-  baseURL: "http://192.168.1.22:8000/api",
+  baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
 });
 
-// Cloudinary Upload Functions
+// Cloudinary Upload Functions - Dynamic URLs
 export const uploadImage = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
   
   const response = await axios.post(
-    "http://192.168.1.22:8000/api/upload/image/",
+    `${API_BASE_URL}/upload/image/`,
     formData,
     {
       headers: {
@@ -29,7 +35,7 @@ export const uploadPDF = async (file) => {
   formData.append('file', file);
   
   const response = await axios.post(
-    "http://192.168.1.22:8000/api/upload/pdf/",
+    `${API_BASE_URL}/upload/pdf/`,
     formData,
     {
       headers: {
@@ -45,7 +51,7 @@ export const uploadText = async (file) => {
   formData.append('file', file);
   
   const response = await axios.post(
-    "http://192.168.1.22:8000/api/upload/text/",
+    `${API_BASE_URL}/upload/text/`,
     formData,
     {
       headers: {

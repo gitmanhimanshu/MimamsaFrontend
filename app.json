@@ -1,17 +1,20 @@
 {
   "expo": {
-    "name": "Mimamsa",
-    "slug": "mimamsa",
+    "name": "Mimanasa",
+    "slug": "mimanasa",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "punch",
+    "scheme": "mimanasa",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.mimanasa.app"
     },
     "android": {
+      "package": "com.mimanasa.app",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -19,7 +22,12 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "permissions": [
+        "INTERNET",
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "output": "static",
@@ -43,6 +51,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+  "apiBaseUrl": "https://mimamsabackend.onrender.com/api",
+  "env": "production",
+  "cloudinaryCloudName": "dbizsbr3w",
+  "cloudinaryUploadPreset": "punch_data",
+  "router": {}
+}
   }
 }

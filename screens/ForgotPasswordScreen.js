@@ -3,29 +3,23 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingVi
 import API from "../api";
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
-export default function LoginScreen({ onSwitchToRegister, onLoginSuccess, onForgotPassword }) {
+export default function ForgotPasswordScreen({ onBack, onOTPSent }) {
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
 
-  const login = async () => {
-    if (!email || !password) {
-      alert("Please fill all fields");
+  const sendOTP = async () => {
+    if (!email) {
+      alert("Please enter your email");
       return;
     }
 
     setLoading(true);
     try {
-      const res = await API.post("/app/login/", {
-        email,
-        password,
-      });
-      onLoginSuccess(res.data);
+      const res = await API.post("/app/forgot-password/send-otp/", { email });
+      alert("✓ OTP sent to your email!");
+      onOTPSent(email);
     } catch (err) {
-      const errorMsg = err.response?.data?.error || 
-        (err.response ? "Login failed. Please check credentials." : 
-        `Network Error: ${err.message}`);
+      const errorMsg = err.response?.data?.error || "Failed to send OTP";
       alert(errorMsg);
     } finally {
       setLoading(false);
@@ -40,12 +34,16 @@ export default function LoginScreen({ onSwitchToRegister, onLoginSuccess, onForg
         style={styles.container}
       >
         <View style={styles.content}>
+          <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
+            <Text style={styles.backButtonText}>← Back</Text>
+          </TouchableOpacity>
+
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Text style={styles.icon}>📚</Text>
+              <Text style={styles.icon}>🔐</Text>
             </View>
-            <Text style={styles.title}>Welcome Back</Text>
-            <Text style={styles.subtitle}>Sign in to continue reading</Text>
+            <Text style={styles.title}>Forgot Password?</Text>
+            <Text style={styles.subtitle}>Enter your email to receive OTP</Text>
           </View>
 
           <View style={styles.form}>
@@ -65,50 +63,16 @@ export default function LoginScreen({ onSwitchToRegister, onLoginSuccess, onForg
               </View>
             </View>
 
-            <View style={styles.inputContainer}>
-              <View style={styles.labelRow}>
-                <Text style={styles.label}>Password</Text>
-                <TouchableOpacity onPress={onForgotPassword} activeOpacity={0.7}>
-                  <Text style={styles.forgotLink}>Forgot Password?</Text>
-                </TouchableOpacity>
-              </View>
-              <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>🔒</Text>
-                <TextInput 
-                  placeholder="Enter your password" 
-                  placeholderTextColor={COLORS.textMuted}
-                  value={password}
-                  secureTextEntry={!showPassword}
-                  onChangeText={setPassword}
-                  style={styles.input}
-                />
-                <TouchableOpacity 
-                  onPress={() => setShowPassword(!showPassword)}
-                  style={styles.eyeButton}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
             <TouchableOpacity 
               style={[styles.button, loading && styles.buttonDisabled]} 
-              onPress={login}
+              onPress={sendOTP}
               disabled={loading}
               activeOpacity={0.8}
             >
               <Text style={styles.buttonText}>
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? "Sending OTP..." : "Send OTP"}
               </Text>
             </TouchableOpacity>
-
-            <View style={styles.footer}>
-              <Text style={styles.footerText}>Don't have an account? </Text>
-              <TouchableOpacity onPress={onSwitchToRegister} activeOpacity={0.7}>
-                <Text style={styles.link}>Create Account</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </KeyboardAvoidingView>
@@ -123,8 +87,16 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
     padding: SPACING.xl,
+    paddingTop: 60,
+  },
+  backButton: {
+    marginBottom: SPACING.xl,
+  },
+  backButtonText: {
+    color: COLORS.primary,
+    fontSize: 16,
+    fontWeight: '700',
   },
   header: {
     marginBottom: SPACING.xxl,
@@ -151,6 +123,7 @@ const styles = StyleSheet.create({
   subtitle: {
     ...TYPOGRAPHY.body,
     color: COLORS.textSecondary,
+    textAlign: 'center',
   },
   form: {
     width: '100%',
@@ -158,21 +131,11 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: SPACING.lg,
   },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: SPACING.sm,
-  },
   label: {
     ...TYPOGRAPHY.caption,
     fontWeight: '600',
     color: COLORS.textSecondary,
-  },
-  forgotLink: {
-    ...TYPOGRAPHY.caption,
-    color: COLORS.primary,
-    fontWeight: '700',
+    marginBottom: SPACING.sm,
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -194,12 +157,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.textPrimary,
   },
-  eyeButton: {
-    padding: SPACING.sm,
-  },
-  eyeIcon: {
-    fontSize: 20,
-  },
   button: {
     backgroundColor: COLORS.primary,
     padding: SPACING.md + 2,
@@ -217,19 +174,5 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     letterSpacing: 0.5,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: SPACING.xl,
-  },
-  footerText: {
-    color: COLORS.textSecondary,
-    fontSize: 15,
-  },
-  link: {
-    color: COLORS.primary,
-    fontSize: 15,
-    fontWeight: '700',
   },
 });

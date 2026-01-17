@@ -166,7 +166,6 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
               {item.published_year && (
                 <Text style={styles.bookListYear}>{item.published_year}</Text>
               )}
-              )}
             </View>
           </View>
           <View style={[styles.statusBadge, item.is_paid ? styles.statusCheckedOut : styles.statusAvailable]}>
@@ -379,6 +378,18 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
               >
                 <Text style={styles.drawerItemIcon}>👤</Text>
                 <Text style={styles.drawerItemText}>My Profile</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.drawerItem}
+                onPress={() => {
+                  setMenuVisible(false);
+                  onNavigate("Poems");
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.drawerItemIcon}>📝</Text>
+                <Text style={styles.drawerItemText}>कविताएँ (Poems)</Text>
               </TouchableOpacity>
 
               {user.is_admin && (

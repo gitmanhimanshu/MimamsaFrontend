@@ -168,6 +168,13 @@ export default function AdminPanelScreen({ user, onBack, onNavigate }) {
                 <Text style={styles.actionButtonSmallText}>Manage Authors</Text>
               </TouchableOpacity>
             </View>
+            <TouchableOpacity 
+              style={[styles.actionButton, { backgroundColor: "#9f7aea" }]}
+              onPress={() => onNavigate("ManagePoems")}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.actionButtonText}>📝 Manage Poems</Text>
+            </TouchableOpacity>
           </View>
 
           <View style={styles.listSection}>

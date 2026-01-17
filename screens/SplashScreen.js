@@ -77,7 +77,7 @@ export default function SplashScreen({ onFinish }) {
             },
           ]}
         >
-          <Text style={styles.appName}>Mimamsa</Text>
+          <Text style={styles.appName}>Mimanasa</Text>
           <Text style={styles.tagline}>Explore • Read • Discover</Text>
           <View style={styles.divider} />
           <Text style={styles.subtitle}>Your Digital Library</Text>

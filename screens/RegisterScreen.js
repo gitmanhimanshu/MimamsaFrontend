@@ -2,11 +2,12 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
 import API from "../api";
 
-export default function RegisterScreen({ onSwitchToLogin }) {
+export default function RegisterScreen({ onSwitchToLogin, onLoginSuccess }) {
   const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const register = async () => {
     if (!email || !username || !password) {
@@ -21,15 +22,26 @@ export default function RegisterScreen({ onSwitchToLogin }) {
 
     setLoading(true);
     try {
-      const res = await API.post("/app/register/", {
+      // Step 1: Register user
+      const registerRes = await API.post("/app/register/", {
         email,
         username,
         password,
       });
-      console.log("✓ Registration success:", res.data);
-      console.log("Status:", res.status);
-      alert("✓ Registered successfully!\nPlease login now.");
-      onSwitchToLogin();
+      console.log("✓ Registration success:", registerRes.data);
+      
+      // Step 2: Auto-login after registration
+      console.log("=== AUTO-LOGIN AFTER REGISTRATION ===");
+      const loginRes = await API.post("/app/login/", {
+        email,
+        password,
+      });
+      console.log("✓ Auto-login success:", loginRes.data);
+      
+      // Step 3: Navigate to HomeScreen directly
+      if (onLoginSuccess) {
+        onLoginSuccess(loginRes.data);
+      }
     } catch (err) {
       console.log("=== REGISTRATION ERROR ===");
       console.log("Error type:", err.message);
@@ -40,7 +52,7 @@ export default function RegisterScreen({ onSwitchToLogin }) {
       
       const errorMsg = err.response?.data 
         ? JSON.stringify(err.response.data, null, 2)
-        : `Network Error: ${err.message}\n\nMake sure Django is running on:\nhttp://192.168.0.35:8000`;
+        : `Network Error: ${err.message}\n\nMake sure backend is running`;
       alert(`Registration failed:\n${errorMsg}`);
     } finally {
       setLoading(false);
@@ -61,54 +73,70 @@ export default function RegisterScreen({ onSwitchToLogin }) {
         <View style={styles.form}>
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
-            <TextInput 
-              placeholder="Enter your email" 
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              style={styles.input}
-            />
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputIcon}>✉️</Text>
+              <TextInput 
+                placeholder="Enter your email" 
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                style={styles.input}
+              />
+            </View>
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Username</Text>
-            <TextInput 
-              placeholder="Choose a username" 
-              value={username}
-              onChangeText={setUsername}
-              autoCapitalize="none"
-              style={styles.input}
-            />
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputIcon}>👤</Text>
+              <TextInput 
+                placeholder="Choose a username" 
+                value={username}
+                onChangeText={setUsername}
+                autoCapitalize="none"
+                style={styles.input}
+              />
+            </View>
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Password</Text>
-            <TextInput 
-              placeholder="Create a password" 
-              value={password}
-              secureTextEntry 
-              onChangeText={setPassword}
-              style={styles.input}
-            />
+            <View style={styles.inputWrapper}>
+              <Text style={styles.inputIcon}>🔒</Text>
+              <TextInput 
+                placeholder="Create a password" 
+                value={password}
+                secureTextEntry={!showPassword}
+                onChangeText={setPassword}
+                style={styles.input}
+              />
+              <TouchableOpacity 
+                onPress={() => setShowPassword(!showPassword)}
+                style={styles.eyeButton}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
+        </View>
 
-          <TouchableOpacity 
-            style={[styles.button, loading && styles.buttonDisabled]} 
-            onPress={register}
-            disabled={loading}
-          >
-            <Text style={styles.buttonText}>
-              {loading ? "Creating account..." : "Register"}
-            </Text>
+        <TouchableOpacity 
+          style={[styles.button, loading && styles.buttonDisabled]} 
+          onPress={register}
+          disabled={loading}
+        >
+          <Text style={styles.buttonText}>
+            {loading ? "Creating account..." : "Register"}
+          </Text>
+        </TouchableOpacity>
+
+        <View style={styles.footer}>
+          <Text style={styles.footerText}>Already have an account? </Text>
+          <TouchableOpacity onPress={onSwitchToLogin}>
+            <Text style={styles.link}>Login</Text>
           </TouchableOpacity>
-
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account? </Text>
-            <TouchableOpacity onPress={onSwitchToLogin}>
-              <Text style={styles.link}>Login</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </View>
     </KeyboardAvoidingView>
@@ -154,19 +182,34 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     letterSpacing: 0.3,
   },
-  input: {
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 2,
     borderColor: "#e2e8f0",
     borderRadius: 14,
-    padding: 18,
-    fontSize: 16,
     backgroundColor: "#fff",
-    color: "#1a202c",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+  },
+  inputIcon: {
+    fontSize: 20,
+    marginLeft: 18,
+  },
+  input: {
+    flex: 1,
+    padding: 18,
+    fontSize: 16,
+    color: "#1a202c",
+  },
+  eyeButton: {
+    padding: 12,
+  },
+  eyeIcon: {
+    fontSize: 20,
   },
   button: {
     backgroundColor: "#48bb78",

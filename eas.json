@@ -1,0 +1,36 @@
+{
+  "cli": {
+    "version": ">= 5.0.0"
+  },
+  "build": {
+    "production": {
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease",
+        "env": {
+          "API_BASE_URL": "https://mimamsabackend.onrender.com/api",
+          "ENV": "production"
+        }
+      }
+    },
+    "preview": {
+      "android": {
+        "buildType": "apk",
+        "env": {
+          "API_BASE_URL": "https://mimamsabackend.onrender.com/api",
+          "ENV": "production"
+        }
+      }
+    },
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}

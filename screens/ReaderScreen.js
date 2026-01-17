@@ -6,22 +6,21 @@ const { width, height } = Dimensions.get('window');
 
 export default function ReaderScreen({ book, onBack }) {
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
   
   const fileUrl = book.content_url || "";
   const isEpub = fileUrl.toLowerCase().includes('.epub');
   const isPdf = fileUrl.toLowerCase().includes('.pdf');
   
-  // Create HTML with PDF.js viewer for better mobile experience
+  // Create HTML with PDF.js viewer - ALL PAGES SCROLLABLE
   const createPDFViewerHTML = (url) => {
-    // Use direct Cloudinary URL
     let pdfUrl = url;
     
     return `
     <!DOCTYPE html>
     <html>
     <head>
-      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
       <style>
         * {
           margin: 0;
@@ -29,72 +28,42 @@ export default function ReaderScreen({ book, onBack }) {
           box-sizing: border-box;
         }
         body {
-          background: #1a1a1a;
-          overflow: hidden;
+          background: #2a2a2a;
+          overflow-y: scroll;
+          overflow-x: hidden;
+          -webkit-overflow-scrolling: touch;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         #viewer-container {
-          width: 100vw;
-          height: 100vh;
-          display: flex;
-          flex-direction: column;
-          background: #1a1a1a;
-        }
-        #pdf-canvas {
-          flex: 1;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          overflow: auto;
+          width: 100%;
+          min-height: 100vh;
           background: #2a2a2a;
-          padding: 10px;
+          padding: 20px 10px;
         }
-        canvas {
+        #pages-container {
+          width: 100%;
           max-width: 100%;
-          height: auto;
+        }
+        .pdf-page {
+          margin: 0 auto 20px;
+          display: block;
+          width: 100%;
+          max-width: 100%;
           box-shadow: 0 4px 20px rgba(0,0,0,0.5);
           background: white;
         }
-        #controls {
-          background: #1a1a1a;
-          padding: 15px;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          border-top: 1px solid #333;
-        }
-        button {
-          background: #4299e1;
-          color: white;
-          border: none;
-          padding: 12px 24px;
-          border-radius: 8px;
-          font-size: 16px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: all 0.3s;
-        }
-        button:active {
-          background: #3182ce;
-          transform: scale(0.95);
-        }
-        button:disabled {
-          background: #555;
-          opacity: 0.5;
-        }
-        #page-info {
-          color: #fff;
-          font-size: 16px;
-          font-weight: 500;
-        }
         #loading {
-          position: absolute;
+          position: fixed;
           top: 50%;
           left: 50%;
           transform: translate(-50%, -50%);
           color: #fff;
           font-size: 18px;
           text-align: center;
+          z-index: 10;
+          background: rgba(0,0,0,0.8);
+          padding: 30px;
+          border-radius: 15px;
         }
         .spinner {
           border: 4px solid #333;
@@ -114,127 +83,132 @@ export default function ReaderScreen({ book, onBack }) {
           color: #ff6b6b;
           padding: 20px;
           text-align: center;
+          position: fixed;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          background: rgba(0,0,0,0.9);
+          border-radius: 15px;
+          max-width: 80%;
+        }
+        #page-indicator {
+          position: fixed;
+          top: 10px;
+          right: 10px;
+          background: rgba(66, 153, 225, 0.9);
+          color: white;
+          padding: 8px 15px;
+          border-radius: 20px;
+          font-size: 14px;
+          font-weight: 600;
+          z-index: 100;
+          box-shadow: 0 2px 10px rgba(0,0,0,0.3);
         }
       </style>
     </head>
     <body>
+      <div id="loading">
+        <div class="spinner"></div>
+        <div>Loading PDF...</div>
+      </div>
+      <div id="error-msg"></div>
+      <div id="page-indicator" style="display: none;">Page 1 / --</div>
       <div id="viewer-container">
-        <div id="pdf-canvas">
-          <div id="loading">
-            <div class="spinner"></div>
-            <div>Loading PDF...</div>
-          </div>
-          <div id="error-msg"></div>
-          <canvas id="the-canvas"></canvas>
-        </div>
-        <div id="controls">
-          <button id="prev-btn" disabled>← Previous</button>
-          <span id="page-info">
-            <span id="page-num">1</span> / <span id="page-count">--</span>
-          </span>
-          <button id="next-btn" disabled>Next →</button>
-        </div>
+        <div id="pages-container"></div>
       </div>
 
       <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
       <script>
         const url = '${pdfUrl}';
-        let pdfDoc = null;
-        let pageNum = 1;
-        let pageRendering = false;
-        let pageNumPending = null;
-        const scale = 1.5;
-        const canvas = document.getElementById('the-canvas');
-        const ctx = canvas.getContext('2d');
+        const scale = 2.0; // Good scale for mobile
         const loading = document.getElementById('loading');
         const errorMsg = document.getElementById('error-msg');
+        const pagesContainer = document.getElementById('pages-container');
+        const pageIndicator = document.getElementById('page-indicator');
 
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-        function renderPage(num) {
-          pageRendering = true;
-          pdfDoc.getPage(num).then(function(page) {
-            const viewport = page.getViewport({scale: scale});
-            canvas.height = viewport.height;
-            canvas.width = viewport.width;
+        // Track scroll position to show current page
+        let currentVisiblePage = 1;
+        let totalPages = 0;
 
-            const renderContext = {
-              canvasContext: ctx,
-              viewport: viewport
-            };
+        function updatePageIndicator() {
+          const canvases = document.querySelectorAll('.pdf-page');
+          const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+          const windowHeight = window.innerHeight;
+          
+          for (let i = 0; i < canvases.length; i++) {
+            const canvas = canvases[i];
+            const rect = canvas.getBoundingClientRect();
             
-            const renderTask = page.render(renderContext);
-            renderTask.promise.then(function() {
-              pageRendering = false;
-              loading.style.display = 'none';
-              if (pageNumPending !== null) {
-                renderPage(pageNumPending);
-                pageNumPending = null;
-              }
-            });
-          });
-
-          document.getElementById('page-num').textContent = num;
-        }
-
-        function queueRenderPage(num) {
-          if (pageRendering) {
-            pageNumPending = num;
-          } else {
-            renderPage(num);
+            // Check if canvas is in viewport
+            if (rect.top <= windowHeight / 2 && rect.bottom >= windowHeight / 2) {
+              currentVisiblePage = i + 1;
+              pageIndicator.textContent = 'Page ' + currentVisiblePage + ' / ' + totalPages;
+              break;
+            }
           }
         }
 
-        function onPrevPage() {
-          if (pageNum <= 1) return;
-          pageNum--;
-          queueRenderPage(pageNum);
-          window.ReactNativeWebView.postMessage(JSON.stringify({page: pageNum}));
-        }
-
-        function onNextPage() {
-          if (pageNum >= pdfDoc.numPages) return;
-          pageNum++;
-          queueRenderPage(pageNum);
-          window.ReactNativeWebView.postMessage(JSON.stringify({page: pageNum}));
-        }
-
-        document.getElementById('prev-btn').addEventListener('click', onPrevPage);
-        document.getElementById('next-btn').addEventListener('click', onNextPage);
-
-        // Load PDF with proper settings for Cloudinary
-        pdfjsLib.getDocument({
-          url: url,
-          withCredentials: false,
-          isEvalSupported: false,
-          cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
-          cMapPacked: true
-        }).promise.then(function(pdfDoc_) {
-          pdfDoc = pdfDoc_;
-          document.getElementById('page-count').textContent = pdfDoc.numPages;
+        // Render all pages
+        async function renderAllPages(pdfDoc) {
+          totalPages = pdfDoc.numPages;
+          pageIndicator.textContent = 'Page 1 / ' + totalPages;
+          pageIndicator.style.display = 'block';
           
-          document.getElementById('prev-btn').disabled = false;
-          document.getElementById('next-btn').disabled = false;
+          for (let pageNum = 1; pageNum <= pdfDoc.numPages; pageNum++) {
+            const page = await pdfDoc.getPage(pageNum);
+            const viewport = page.getViewport({scale: scale});
+            
+            const canvas = document.createElement('canvas');
+            canvas.className = 'pdf-page';
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+            
+            pagesContainer.appendChild(canvas);
+            
+            const ctx = canvas.getContext('2d');
+            await page.render({
+              canvasContext: ctx,
+              viewport: viewport
+            }).promise;
+            
+            // Update loading text
+            loading.querySelector('div:last-child').textContent = 'Loading page ' + pageNum + ' of ' + pdfDoc.numPages;
+          }
           
-          renderPage(pageNum);
+          loading.style.display = 'none';
           
           // Send success message
           window.ReactNativeWebView.postMessage(JSON.stringify({
             success: true, 
             pages: pdfDoc.numPages
           }));
+        }
+
+        // Load PDF
+        pdfjsLib.getDocument({
+          url: url,
+          withCredentials: false,
+          isEvalSupported: false,
+          cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+          cMapPacked: true
+        }).promise.then(function(pdfDoc) {
+          renderAllPages(pdfDoc);
         }).catch(function(error) {
           console.error('PDF load error:', error);
           loading.style.display = 'none';
           errorMsg.style.display = 'block';
-          errorMsg.innerHTML = '<div style="color: #ff6b6b; font-size: 18px; font-weight: 600;">⚠️ Failed to load PDF</div><div style="color: #aaa; margin-top: 10px; font-size: 14px;">The file might be corrupted or not accessible</div>';
+          errorMsg.innerHTML = '<div style="font-size: 18px; font-weight: 600; margin-bottom: 10px;">⚠️ Failed to load PDF</div><div style="color: #aaa; font-size: 14px;">The file might be corrupted or not accessible</div>';
           
-          // Send error message
           window.ReactNativeWebView.postMessage(JSON.stringify({
             error: true, 
             message: error.message
           }));
         });
+
+        // Update page indicator on scroll
+        window.addEventListener('scroll', updatePageIndicator);
       </script>
     </body>
     </html>
@@ -300,8 +274,8 @@ export default function ReaderScreen({ book, onBack }) {
   const handleMessage = (event) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
-      if (data.page) {
-        setCurrentPage(data.page);
+      if (data.pages) {
+        setTotalPages(data.pages);
       }
     } catch (e) {
       console.log("Message parse error:", e);
