@@ -5,14 +5,15 @@ import ReviewModal from "../components/ReviewModal";
 
 const { width } = Dimensions.get('window');
 
-export default function PoemsScreen({ onBack, userId }) {
+export default function PoemsScreen({ onBack, userId, onNavigate }) {
   const [categories, setCategories] = useState([]);
   const [poems, setPoems] = useState([]);
+  const [myPoems, setMyPoems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedPoem, setSelectedPoem] = useState(null);
   const [loading, setLoading] = useState(true);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
+  const [showMyPoems, setShowMyPoems] = useState(false);
+  
   // Review states
   const [reviews, setReviews] = useState([]);
   const [userReview, setUserReview] = useState(null);
@@ -22,31 +23,48 @@ export default function PoemsScreen({ onBack, userId }) {
 
   useEffect(() => {
     loadData();
+    loadMyPoems();
   }, []);
 
   useEffect(() => {
     if (selectedPoem) {
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }).start();
       loadReviews();
     }
   }, [selectedPoem]);
 
   const loadData = async () => {
     try {
-      const [categoriesRes, poemsRes] = await Promise.all([
-        API.get("/poem-categories/"),
-        API.get("/poems/")
-      ]);
-      setCategories(categoriesRes.data);
+      // Use static categories instead of API call
+      const staticCategories = [
+        { id: 1, name: 'प्रेम कविता', icon: '💕' },
+        { id: 2, name: 'प्रकृति', icon: '🌿' },
+        { id: 3, name: 'देशभक्ति', icon: '🇮🇳' },
+        { id: 4, name: 'आध्यात्मिक', icon: '🕉️' },
+        { id: 5, name: 'सामाजिक', icon: '👥' },
+        { id: 6, name: 'प्रेरणादायक', icon: '💪' },
+        { id: 7, name: 'दुःख', icon: '😢' },
+        { id: 8, name: 'हास्य', icon: '😄' }
+      ];
+      
+      const poemsRes = await API.get("/poems/");
+      setCategories(staticCategories);
       setPoems(poemsRes.data);
     } catch (err) {
       console.error("Error loading poems:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadMyPoems = async () => {
+    try {
+      const currentUserId = await getUserId();
+      if (currentUserId) {
+        const response = await API.get(`/user-poems/?user_id=${currentUserId}`);
+        setMyPoems(response.data);
+      }
+    } catch (err) {
+      console.error("Error loading my poems:", err);
     }
   };
 
@@ -129,6 +147,7 @@ export default function PoemsScreen({ onBack, userId }) {
   };
 
   const getFilteredPoems = () => {
+    if (showMyPoems) return myPoems;
     if (!selectedCategory) return poems;
     return poems.filter(p => p.category === selectedCategory);
   };
@@ -300,62 +319,95 @@ export default function PoemsScreen({ onBack, userId }) {
           <Text style={styles.backButtonText}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>कविताएँ</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity 
+          onPress={() => onNavigate && onNavigate('AddUserPoem')}
+          style={styles.addPoemButton}
+        >
+          <Text style={styles.addPoemButtonText}>✍️</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView style={styles.content}>
-        {/* Categories */}
-        <View style={styles.categoriesSection}>
-          <Text style={styles.sectionTitle}>श्रेणियाँ</Text>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.categoriesScroll}
-          >
+        {/* My Poems Section */}
+        {myPoems.length > 0 && (
+          <View style={styles.myPoemsSection}>
             <TouchableOpacity
-              style={[
-                styles.categoryChip,
-                !selectedCategory && styles.categoryChipActive
-              ]}
-              onPress={() => filterPoems(null)}
+              style={styles.myPoemsCard}
+              onPress={() => {
+                setShowMyPoems(!showMyPoems);
+                setSelectedCategory(null);
+              }}
             >
-              <Text style={[
-                styles.categoryChipText,
-                !selectedCategory && styles.categoryChipTextActive
-              ]}>
-                सभी
-              </Text>
+              <View style={styles.myPoemsHeader}>
+                <View style={styles.myPoemsIcon}>
+                  <Text style={styles.myPoemsIconText}>✍️</Text>
+                </View>
+                <View style={styles.myPoemsInfo}>
+                  <Text style={styles.myPoemsTitle}>My Poems</Text>
+                  <Text style={styles.myPoemsCount}>{myPoems.length} poems written by you</Text>
+                </View>
+              </View>
+              <Text style={styles.myPoemsArrow}>{showMyPoems ? '▼' : '▶'}</Text>
             </TouchableOpacity>
-            {categories.map(cat => (
+          </View>
+        )}
+
+        {/* Categories */}
+        {!showMyPoems && (
+          <View style={styles.categoriesSection}>
+            <Text style={styles.sectionTitle}>श्रेणियाँ</Text>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.categoriesScroll}
+            >
               <TouchableOpacity
-                key={cat.id}
                 style={[
                   styles.categoryChip,
-                  selectedCategory === cat.id && styles.categoryChipActive
+                  !selectedCategory && styles.categoryChipActive
                 ]}
-                onPress={() => filterPoems(cat.id)}
+                onPress={() => filterPoems(null)}
               >
-                <Text style={styles.categoryIcon}>{cat.icon}</Text>
                 <Text style={[
                   styles.categoryChipText,
-                  selectedCategory === cat.id && styles.categoryChipTextActive
+                  !selectedCategory && styles.categoryChipTextActive
                 ]}>
-                  {cat.name}
+                  सभी
                 </Text>
-                <View style={styles.categoryBadge}>
-                  <Text style={styles.categoryBadgeText}>{String(cat.poems_count || 0)}</Text>
-                </View>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+              {categories.map(cat => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={[
+                    styles.categoryChip,
+                    selectedCategory === cat.id && styles.categoryChipActive
+                  ]}
+                  onPress={() => filterPoems(cat.id)}
+                >
+                  <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                  <Text style={[
+                    styles.categoryChipText,
+                    selectedCategory === cat.id && styles.categoryChipTextActive
+                  ]}>
+                    {cat.name}
+                  </Text>
+                  <View style={styles.categoryBadge}>
+                    <Text style={styles.categoryBadgeText}>{String(cat.poems_count || 0)}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Poems List */}
         <View style={styles.poemsSection}>
           <Text style={styles.sectionTitle}>
-            {selectedCategory 
-              ? (categories.find(c => c.id === selectedCategory)?.name || 'कविताएँ')
-              : 'सभी कविताएँ'}
+            {showMyPoems 
+              ? 'मेरी कविताएँ'
+              : selectedCategory 
+                ? (categories.find(c => c.id === selectedCategory)?.name || 'कविताएँ')
+                : 'सभी कविताएँ'}
           </Text>
           {loading ? (
             <Text style={styles.loadingText}>Loading...</Text>
@@ -420,10 +472,10 @@ export default function PoemsScreen({ onBack, userId }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#0f0f0f",
+    backgroundColor: "#FF9933", // Saffron/Bhagwa color
   },
   header: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#FF7700",
     paddingTop: 50,
     paddingBottom: 15,
     paddingHorizontal: 15,
@@ -431,7 +483,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     borderBottomWidth: 1,
-    borderBottomColor: "#333",
+    borderBottomColor: "#FF6600",
   },
   backButton: {
     width: 40,
@@ -451,8 +503,72 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "700",
   },
+  addPoemButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "#4299e1",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  addPoemButtonText: {
+    fontSize: 20,
+  },
   content: {
     flex: 1,
+  },
+  myPoemsSection: {
+    paddingHorizontal: 15,
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  myPoemsCard: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  myPoemsHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    flex: 1,
+  },
+  myPoemsIcon: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: "#FF9933",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  myPoemsIconText: {
+    fontSize: 24,
+  },
+  myPoemsInfo: {
+    flex: 1,
+  },
+  myPoemsTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#FF7700",
+    marginBottom: 4,
+  },
+  myPoemsCount: {
+    fontSize: 14,
+    color: "#666",
+  },
+  myPoemsArrow: {
+    fontSize: 16,
+    color: "#FF7700",
+    fontWeight: "700",
   },
   categoriesSection: {
     paddingVertical: 20,
@@ -471,7 +587,7 @@ const styles = StyleSheet.create({
   categoryChip: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#2a2a2a",
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
@@ -479,13 +595,13 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   categoryChipActive: {
-    backgroundColor: "#4299e1",
+    backgroundColor: "#FF7700",
   },
   categoryIcon: {
     fontSize: 16,
   },
   categoryChipText: {
-    color: "#aaa",
+    color: "#666",
     fontSize: 14,
     fontWeight: "600",
   },
@@ -509,12 +625,17 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   poemCard: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     padding: 20,
     marginBottom: 15,
     borderWidth: 1,
-    borderColor: "#2a2a2a",
+    borderColor: "#FFE5CC",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   poemCardHeader: {
     flexDirection: "row",
@@ -523,7 +644,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   poemCardTitle: {
-    color: "#fff",
+    color: "#333",
     fontSize: 18,
     fontWeight: "700",
     flex: 1,
@@ -533,7 +654,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
   poemCardPreview: {
-    color: "#aaa",
+    color: "#666",
     fontSize: 14,
     lineHeight: 22,
     marginBottom: 12,
@@ -544,7 +665,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: "#2a2a2a",
+    borderTopColor: "#FFE5CC",
   },
   authorInfo: {
     flex: 1,
@@ -556,7 +677,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   poemCardAuthor: {
-    color: "#4299e1",
+    color: "#FF7700",
     fontSize: 14,
     fontWeight: "700",
   },
@@ -584,14 +705,14 @@ const styles = StyleSheet.create({
   },
   // Poem Detail Styles
   poemHeader: {
-    backgroundColor: "#1a1a1a",
+    backgroundColor: "#FF7700",
     paddingTop: 50,
     paddingBottom: 15,
     paddingHorizontal: 15,
     flexDirection: "row",
     alignItems: "center",
     borderBottomWidth: 1,
-    borderBottomColor: "#333",
+    borderBottomColor: "#FF6600",
   },
   poemHeaderTitle: {
     color: "#fff",
@@ -602,6 +723,7 @@ const styles = StyleSheet.create({
   },
   poemDetailContainer: {
     flex: 1,
+    backgroundColor: "#FF9933",
   },
   poemDetailContent: {
     padding: 20,

@@ -14,6 +14,7 @@ import ReaderScreen from "../screens/ReaderScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import PoemsScreen from "../screens/PoemsScreen";
 import ManagePoemsScreen from "../screens/ManagePoemsScreen";
+import AddUserPoemScreen from "../screens/AddUserPoemScreen";
 import SplashScreen from "../screens/SplashScreen";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 
@@ -209,7 +210,10 @@ export default function RootLayout() {
       return <ProfileScreen user={user} onBack={handleBack} onUpdateUser={handleUpdateUser} />;
     
     case "Poems":
-      return <PoemsScreen onBack={handleBack} userId={user.id} />;
+      return <PoemsScreen onBack={handleBack} userId={user.id} onNavigate={handleNavigate} />;
+    
+    case "AddUserPoem":
+      return <AddUserPoemScreen navigation={{ goBack: handleBack }} />;
     
     case "ManagePoems":
       return <ManagePoemsScreen user={user} onBack={handleBack} />;

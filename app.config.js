@@ -1,7 +1,8 @@
 export default {
   expo: {
     name: "Mimanasa",
-    slug: "mimanasa",
+    slug: "mimamsa",
+    owner: "himanshu45",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",

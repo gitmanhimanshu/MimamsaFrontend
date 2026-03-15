@@ -17,11 +17,7 @@ export default function ManagePoemsScreen({ user, onBack }) {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [language, setLanguage] = useState("Hindi");
   
-  // Category form
-  const [showCategoryForm, setShowCategoryForm] = useState(false);
-  const [categoryName, setCategoryName] = useState("");
-  const [categoryIcon, setCategoryIcon] = useState("📝");
-  const [categoryDescription, setCategoryDescription] = useState("");
+  // Category form - removed since using static categories
 
   useEffect(() => {
     loadData();
@@ -29,13 +25,25 @@ export default function ManagePoemsScreen({ user, onBack }) {
 
   const loadData = async () => {
     try {
-      const [poemsRes, categoriesRes, authorsRes] = await Promise.all([
+      const [poemsRes, authorsRes] = await Promise.all([
         API.get("/poems/"),
-        API.get("/poem-categories/"),
         API.get("/authors/")
       ]);
+      
+      // Use static categories
+      const staticCategories = [
+        { id: 1, name: 'प्रेम कविता', icon: '💕' },
+        { id: 2, name: 'प्रकृति', icon: '🌿' },
+        { id: 3, name: 'देशभक्ति', icon: '🇮🇳' },
+        { id: 4, name: 'आध्यात्मिक', icon: '🕉️' },
+        { id: 5, name: 'सामाजिक', icon: '👥' },
+        { id: 6, name: 'प्रेरणादायक', icon: '💪' },
+        { id: 7, name: 'दुःख', icon: '😢' },
+        { id: 8, name: 'हास्य', icon: '😄' }
+      ];
+      
       setPoems(poemsRes.data);
-      setCategories(categoriesRes.data);
+      setCategories(staticCategories);
       setAuthors(authorsRes.data);
     } catch (err) {
       console.error("Error loading data:", err);
@@ -123,33 +131,7 @@ export default function ManagePoemsScreen({ user, onBack }) {
     );
   };
 
-  const handleAddCategory = async () => {
-    if (!categoryName.trim()) {
-      Alert.alert("Error", "Category name is required");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      await API.post("/poem-categories/", {
-        name: categoryName.trim(),
-        icon: categoryIcon,
-        description: categoryDescription.trim(),
-        user_id: user.id
-      });
-      Alert.alert("Success", "Category added successfully");
-      setShowCategoryForm(false);
-      setCategoryName("");
-      setCategoryIcon("📝");
-      setCategoryDescription("");
-      loadData();
-    } catch (err) {
-      console.error("Error adding category:", err);
-      Alert.alert("Error", "Failed to add category");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // handleAddCategory removed - using static categories
 
   return (
     <View style={styles.container}>
