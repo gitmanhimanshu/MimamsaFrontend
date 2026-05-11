@@ -213,7 +213,7 @@ export default function RootLayout() {
       return <ProfileScreen user={user} onBack={handleBack} onUpdateUser={handleUpdateUser} />;
     
     case "Poems":
-      return <PoemsScreen onBack={handleBack} userId={user.id} onNavigate={handleNavigate} />;
+      return <PoemsScreen onBack={handleBack} userId={user?.id} onNavigate={handleNavigate} />;
     
     case "AddUserPoem":
       return <AddUserPoemScreen navigation={{ goBack: handleBack }} />;

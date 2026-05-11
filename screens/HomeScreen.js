@@ -46,11 +46,16 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
   }, [feed, activeFilter, searchQuery]);
 
   const fetchFeed = async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       fadeAnim.setValue(0);
       const res = await API.get(`/feed/?user_id=${user.id}`);
-      setFeed(res.data.results || res.data || []);
+      const feedData = res.data?.results || res.data || [];
+      setFeed(Array.isArray(feedData) ? feedData : []);
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 400,
@@ -70,11 +75,15 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
   }, []);
 
   const filterFeed = () => {
+    if (!Array.isArray(feed)) {
+      setFilteredFeed([]);
+      return;
+    }
     let filtered = [...feed];
 
     // Filter by type
     if (activeFilter !== "all") {
-      filtered = filtered.filter((item) => item.content_type === activeFilter);
+      filtered = filtered.filter((item) => item && item.content_type === activeFilter);
     }
 
     // Filter by search
@@ -82,9 +91,11 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(
         (item) =>
-          (item.title && item.title.toLowerCase().includes(query)) ||
-          (item.author_name && item.author_name.toLowerCase().includes(query)) ||
-          (item.description && item.description.toLowerCase().includes(query))
+          item && (
+            (item.title && item.title.toLowerCase().includes(query)) ||
+            (item.author_name && item.author_name.toLowerCase().includes(query)) ||
+            (item.description && item.description.toLowerCase().includes(query))
+          )
       );
     }
 
@@ -133,58 +144,61 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
     </View>
   );
 
-  const renderDrawer = () => (
-    <View style={[styles.drawerOverlay, { display: menuVisible ? "flex" : "none" }]}>
-      <TouchableOpacity style={styles.drawerBackdrop} onPress={() => setMenuVisible(false)} activeOpacity={1} />
-      <View style={styles.drawer}>
-        <View style={styles.drawerHeader}>
-          <Text style={styles.drawerTitle}>Menu</Text>
-          <TouchableOpacity onPress={() => setMenuVisible(false)}>
-            <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+  const renderDrawer = () => {
+    if (!menuVisible) return null;
+    return (
+      <View style={styles.drawerOverlay}>
+        <TouchableOpacity style={styles.drawerBackdrop} onPress={() => setMenuVisible(false)} activeOpacity={1} />
+        <View style={styles.drawer}>
+          <View style={styles.drawerHeader}>
+            <Text style={styles.drawerTitle}>Menu</Text>
+            <TouchableOpacity onPress={() => setMenuVisible(false)}>
+              <Ionicons name="close" size={24} color={COLORS.textPrimary} />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("Profile"); }}>
+            <Ionicons name="person-outline" size={22} color={COLORS.primary} />
+            <Text style={styles.drawerItemText}>Profile</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("SavedItems"); }}>
+            <Ionicons name="bookmark-outline" size={22} color={COLORS.primary} />
+            <Text style={styles.drawerItemText}>Saved Items</Text>
+          </TouchableOpacity>
+
+          {user?.is_admin && (
+            <>
+              <View style={styles.drawerDivider} />
+              <Text style={styles.drawerSectionTitle}>Admin</Text>
+              <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("AdminPanel"); }}>
+                <Ionicons name="settings-outline" size={22} color={COLORS.primary} />
+                <Text style={styles.drawerItemText}>Admin Panel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("AddBook"); }}>
+                <Ionicons name="add-circle-outline" size={22} color={COLORS.primary} />
+                <Text style={styles.drawerItemText}>Add Book</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("ManageAuthors"); }}>
+                <Ionicons name="people-outline" size={22} color={COLORS.primary} />
+                <Text style={styles.drawerItemText}>Manage Authors</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("ManagePoems"); }}>
+                <Ionicons name="document-text-outline" size={22} color={COLORS.primary} />
+                <Text style={styles.drawerItemText}>Manage Poems</Text>
+              </TouchableOpacity>
+            </>
+          )}
+
+          <View style={styles.drawerDivider} />
+          <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onLogout(); }}>
+            <Ionicons name="log-out-outline" size={22} color={COLORS.error} />
+            <Text style={[styles.drawerItemText, { color: COLORS.error }]}>Logout</Text>
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("Profile"); }}>
-          <Ionicons name="person-outline" size={22} color={COLORS.primary} />
-          <Text style={styles.drawerItemText}>Profile</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("SavedItems"); }}>
-          <Ionicons name="bookmark-outline" size={22} color={COLORS.primary} />
-          <Text style={styles.drawerItemText}>Saved Items</Text>
-        </TouchableOpacity>
-
-        {user.is_admin && (
-          <>
-            <View style={styles.drawerDivider} />
-            <Text style={styles.drawerSectionTitle}>Admin</Text>
-            <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("AdminPanel"); }}>
-              <Ionicons name="settings-outline" size={22} color={COLORS.primary} />
-              <Text style={styles.drawerItemText}>Admin Panel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("AddBook"); }}>
-              <Ionicons name="add-circle-outline" size={22} color={COLORS.primary} />
-              <Text style={styles.drawerItemText}>Add Book</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("ManageAuthors"); }}>
-              <Ionicons name="people-outline" size={22} color={COLORS.primary} />
-              <Text style={styles.drawerItemText}>Manage Authors</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("ManagePoems"); }}>
-              <Ionicons name="document-text-outline" size={22} color={COLORS.primary} />
-              <Text style={styles.drawerItemText}>Manage Poems</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        <View style={styles.drawerDivider} />
-        <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onLogout(); }}>
-          <Ionicons name="log-out-outline" size={22} color={COLORS.error} />
-          <Text style={[styles.drawerItemText, { color: COLORS.error }]}>Logout</Text>
-        </TouchableOpacity>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -197,7 +211,7 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
           <Text style={styles.headerTitle}>मीमांसा</Text>
         </View>
         <TouchableOpacity style={styles.profileButton} onPress={() => onNavigate("Profile")} activeOpacity={0.7}>
-          {user.profile_photo ? (
+          {user?.profile_photo ? (
             <Image source={{ uri: user.profile_photo }} style={styles.headerAvatar} />
           ) : (
             <View style={styles.headerAvatarPlaceholder}>
@@ -248,7 +262,7 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
             renderItem={({ item }) => (
               <FeedCard
                 item={item}
-                userId={user.id}
+                userId={user?.id}
                 onPress={() => handleCardPress(item)}
               />
             )}

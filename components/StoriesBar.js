@@ -67,7 +67,7 @@ export default function StoriesBar({ user, onViewStory, onCreateStory }) {
             activeOpacity={0.8}
           >
             <View style={styles.addStoryAvatarContainer}>
-              {user.profile_photo ? (
+              {user?.profile_photo ? (
                 <Image
                   source={{ uri: user.profile_photo }}
                   style={styles.addStoryAvatar}
@@ -75,7 +75,7 @@ export default function StoriesBar({ user, onViewStory, onCreateStory }) {
               ) : (
                 <View style={styles.addStoryAvatarPlaceholder}>
                   <Text style={styles.addStoryAvatarInitial}>
-                    {user.username?.[0]?.toUpperCase()}
+                    {user?.username?.[0]?.toUpperCase()}
                   </Text>
                 </View>
               )}
