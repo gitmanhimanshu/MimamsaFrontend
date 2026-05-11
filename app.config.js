@@ -3,11 +3,11 @@ export default {
     name: "Mimanasa",
     slug: "mimamsa",
     owner: "himanshu45",
-    version: "1.0.0",
+    version: "2.0.0",
     orientation: "portrait",
     icon: "./assets/images/icon.png",
     scheme: "mimanasa",
-    userInterfaceStyle: "automatic",
+    userInterfaceStyle: "light",
     newArchEnabled: true,
     ios: {
       supportsTablet: true,
@@ -15,16 +15,22 @@ export default {
     },
     android: {
       package: "com.mimanasa.app",
-      versionCode: 1,
+      versionCode: 2,
       adaptiveIcon: {
-        backgroundColor: "#1a1a2e",
+        backgroundColor: "#FFF5E6",
         foregroundImage: "./assets/images/android-icon-foreground.png",
         backgroundImage: "./assets/images/android-icon-background.png",
         monochromeImage: "./assets/images/android-icon-monochrome.png"
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
+      // APK Size Optimizations
+      enableProguardInReleaseBuilds: true,
+      enableShrinkResourcesInReleaseBuilds: true,
+      extraProguardRules: "-keep public class com.horcrux.svg.** {*;}",
+      // Only include required permissions
       permissions: [
+        "INTERNET",
         "READ_EXTERNAL_STORAGE",
         "WRITE_EXTERNAL_STORAGE",
         "CAMERA"
@@ -39,12 +45,12 @@ export default {
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#1a1a2e",
-          "dark": {
-            "backgroundColor": "#1a1a2e"
+          image: "./assets/images/splash-icon.png",
+          imageWidth: 200,
+          resizeMode: "contain",
+          backgroundColor: "#FFF5E6",
+          dark: {
+            backgroundColor: "#FFF5E6"
           }
         }
       ]
@@ -56,13 +62,12 @@ export default {
     extra: {
       apiBaseUrl: process.env.API_BASE_URL || "https://mimamsabackend.onrender.com/api",
       env: process.env.ENV || "production",
-      cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME,
-      cloudinaryUploadPreset: process.env.CLOUDINARY_UPLOAD_PRESET,
+      cloudinaryCloudName: process.env.CLOUDINARY_CLOUD_NAME || "dbizsbr3w",
+      cloudinaryUploadPreset: process.env.CLOUDINARY_UPLOAD_PRESET || "punch_data",
       eas: {
-        projectId: '5414e30a-2a56-4dea-b3ad-434172cdbcbc'
+        projectId: process.env.EAS_PROJECT_ID || '5414e30a-2a56-4dea-b3ad-434172cdbcbc'
       },
       router: {}
-      
     }
   }
 };

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, StatusBar } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import API from "../api";
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
@@ -53,7 +54,7 @@ export default function ResetPasswordScreen({ email, otp, onPasswordReset }) {
         <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Text style={styles.icon}>🔑</Text>
+              <Ionicons name="key-outline" size={40} color={COLORS.primary} />
             </View>
             <Text style={styles.title}>Reset Password</Text>
             <Text style={styles.subtitle}>Create a new password for your account</Text>
@@ -63,7 +64,7 @@ export default function ResetPasswordScreen({ email, otp, onPasswordReset }) {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>New Password</Text>
               <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>🔒</Text>
+                <Ionicons name="lock-closed-outline" size={20} color={COLORS.primary} style={styles.inputIcon} />
                 <TextInput 
                   placeholder="Enter new password" 
                   placeholderTextColor={COLORS.textMuted}
@@ -77,7 +78,7 @@ export default function ResetPasswordScreen({ email, otp, onPasswordReset }) {
                   style={styles.eyeButton}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.eyeIcon}>{showNewPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                  <Ionicons name={showNewPassword ? "eye-off-outline" : "eye-outline"} size={20} color={COLORS.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -85,7 +86,7 @@ export default function ResetPasswordScreen({ email, otp, onPasswordReset }) {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Confirm Password</Text>
               <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>🔒</Text>
+                <Ionicons name="lock-closed-outline" size={20} color={COLORS.primary} style={styles.inputIcon} />
                 <TextInput 
                   placeholder="Confirm new password" 
                   placeholderTextColor={COLORS.textMuted}

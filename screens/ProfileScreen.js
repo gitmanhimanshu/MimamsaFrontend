@@ -1,7 +1,9 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, Alert, ActivityIndicator, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import * as ImagePicker from "expo-image-picker";
 import API, { uploadImage } from "../api";
+import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
 export default function ProfileScreen({ user, onBack, onUpdateUser }) {
   const [username, setUsername] = useState(user.username);
@@ -93,7 +95,7 @@ export default function ProfileScreen({ user, onBack, onUpdateUser }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Ionicons name="arrow-back" size={24} color="#FF7700" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Edit Profile</Text>
         <View style={{ width: 60 }} />
@@ -127,7 +129,7 @@ export default function ProfileScreen({ user, onBack, onUpdateUser }) {
             disabled={uploading}
             activeOpacity={0.8}
           >
-            <Text style={styles.uploadOptionIcon}>📷</Text>
+            <Ionicons name="camera-outline" size={28} color={COLORS.primary} />
             <Text style={styles.uploadOptionText}>Select Photo</Text>
           </TouchableOpacity>
 
@@ -137,7 +139,7 @@ export default function ProfileScreen({ user, onBack, onUpdateUser }) {
             disabled={uploading}
             activeOpacity={0.8}
           >
-            <Text style={styles.uploadOptionIcon}>✂️</Text>
+            <Ionicons name="crop-outline" size={28} color={COLORS.primary} />
             <Text style={styles.uploadOptionText}>Select & Crop</Text>
           </TouchableOpacity>
         </View>
@@ -173,7 +175,7 @@ export default function ProfileScreen({ user, onBack, onUpdateUser }) {
             <Text style={styles.infoLabel}>Account Type</Text>
             <View style={styles.roleBadge}>
               <Text style={styles.roleText}>
-                {user.is_admin ? "👑 Admin" : "👤 User"}
+                {user.is_admin ? "Admin" : "User"}
               </Text>
             </View>
           </View>
@@ -199,17 +201,17 @@ export default function ProfileScreen({ user, onBack, onUpdateUser }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f0f4f8",
+    backgroundColor: COLORS.background,
   },
   header: {
-    backgroundColor: "#4299e1",
+    backgroundColor: COLORS.primary,
     paddingTop: 50,
     paddingBottom: 20,
     paddingHorizontal: 20,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    shadowColor: "#4299e1",
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -239,7 +241,7 @@ const styles = StyleSheet.create({
   photoSection: {
     alignItems: "center",
     paddingVertical: 40,
-    backgroundColor: "#fff",
+    backgroundColor: COLORS.surface,
     marginBottom: 20,
   },
   photoContainer: {
@@ -251,17 +253,17 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 70,
     borderWidth: 4,
-    borderColor: "#4299e1",
+    borderColor: COLORS.primary,
   },
   profilePlaceholder: {
     width: 140,
     height: 140,
     borderRadius: 70,
-    backgroundColor: "#4299e1",
+    backgroundColor: COLORS.primary,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 4,
-    borderColor: "#3182ce",
+    borderColor: COLORS.primaryDark,
   },
   placeholderText: {
     fontSize: 56,
@@ -280,7 +282,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   changePhotoButton: {
-    backgroundColor: "#4299e1",
+    backgroundColor: COLORS.primary,
     paddingHorizontal: 28,
     paddingVertical: 12,
     borderRadius: 24,
@@ -320,7 +322,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#4299e1",
   },
   uploadOptionSecondary: {
-    backgroundColor: "#805ad5",
+    backgroundColor: COLORS.accent,
   },
   uploadOptionIcon: {
     fontSize: 20,
@@ -340,18 +342,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 15,
     fontWeight: "700",
-    color: "#2d3748",
+    color: COLORS.textPrimary,
     marginBottom: 10,
     letterSpacing: 0.3,
   },
   input: {
     backgroundColor: "#fff",
     borderWidth: 2,
-    borderColor: "#e2e8f0",
+    borderColor: COLORS.border,
     borderRadius: 14,
     padding: 18,
     fontSize: 16,
-    color: "#1a202c",
+    color: COLORS.textPrimary,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -379,7 +381,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   roleBadge: {
-    backgroundColor: "#edf2f7",
+    backgroundColor: COLORS.background,
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 12,
@@ -387,23 +389,23 @@ const styles = StyleSheet.create({
   roleText: {
     fontSize: 14,
     fontWeight: "700",
-    color: "#4a5568",
+    color: COLORS.textSecondary,
     letterSpacing: 0.3,
   },
   saveButton: {
-    backgroundColor: "#48bb78",
+    backgroundColor: COLORS.primary,
     padding: 20,
     borderRadius: 14,
     alignItems: "center",
     marginTop: 10,
-    shadowColor: "#48bb78",
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.3,
     shadowRadius: 12,
     elevation: 5,
   },
   saveButtonDisabled: {
-    backgroundColor: "#a0aec0",
+    backgroundColor: COLORS.gray[400],
     shadowOpacity: 0.1,
   },
   saveButtonText: {

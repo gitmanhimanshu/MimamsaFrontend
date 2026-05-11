@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Image, Animated, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import Constants from "expo-constants";
 import API from "../api";
+import { COLORS } from "../constants/theme";
 
 export default function AddBookScreen({ user, onBack, onNavigate, book = null }) {
   const [title, setTitle] = useState(book?.title || "");
@@ -241,7 +243,7 @@ export default function AddBookScreen({ user, onBack, onNavigate, book = null })
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton} activeOpacity={0.7}>
-          <Text style={styles.backButtonText}>← Back</Text>
+          <Ionicons name="arrow-back" size={24} color="#FF7700" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{book ? "Edit Book" : "Add New Book"}</Text>
         <View style={{ width: 60 }} />
@@ -428,7 +430,7 @@ export default function AddBookScreen({ user, onBack, onNavigate, book = null })
                   disabled={uploading}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.uploadIcon}>📷</Text>
+                  <Ionicons name="camera-outline" size={32} color={COLORS.primary} />
                   <Text style={styles.uploadButtonText}>Upload Cover Image</Text>
                 </TouchableOpacity>
               )}
@@ -456,7 +458,7 @@ export default function AddBookScreen({ user, onBack, onNavigate, book = null })
                   disabled={uploading}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.uploadIcon}>📚</Text>
+                  <Ionicons name="book-outline" size={32} color={COLORS.primary} />
                   <Text style={styles.uploadButtonText}>Upload eBook/Content</Text>
                   <Text style={styles.uploadHint}>PDF, EPUB, or any format</Text>
                 </TouchableOpacity>
@@ -485,7 +487,7 @@ export default function AddBookScreen({ user, onBack, onNavigate, book = null })
                 <Animated.View style={[styles.progressFill, { width: progressWidth }]} />
               </View>
               <Text style={styles.progressText}>
-                {uploadingType === "image" ? "📷 Uploading Image..." : "📚 Uploading Content..."}
+                {uploadingType === "image" ? "Uploading Image..." : "Uploading Content..."}
               </Text>
             </Animated.View>
           )}

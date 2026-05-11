@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, Modal, KeyboardAvoidingView, Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import API from "../api";
 
 export default function ManagePoemsScreen({ user, onBack }) {
@@ -138,7 +139,7 @@ export default function ManagePoemsScreen({ user, onBack }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Ionicons name="arrow-back" size={24} color="#FF7700" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Manage Poems</Text>
         <View style={{ width: 40 }} />
@@ -148,13 +149,8 @@ export default function ManagePoemsScreen({ user, onBack }) {
         {/* Action Buttons */}
         <View style={styles.actionsRow}>
           <TouchableOpacity style={styles.addButton} onPress={handleAddPoem}>
-            <Text style={styles.addButtonText}>➕ Add Poem</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.addButton, styles.categoryButton]} 
-            onPress={() => setShowCategoryForm(true)}
-          >
-            <Text style={styles.addButtonText}>📁 Add Category</Text>
+            <Ionicons name="add-circle-outline" size={18} color="#fff" />
+            <Text style={styles.addButtonText}>Add Poem</Text>
           </TouchableOpacity>
         </View>
 
@@ -178,8 +174,8 @@ export default function ManagePoemsScreen({ user, onBack }) {
               <View style={{ flex: 1 }}>
                 <Text style={styles.poemCardTitle}>{poem.title}</Text>
                 <Text style={styles.poemCardMeta}>
-                  {poem.author_name && `✍️ ${poem.author_name} • `}
-                  {poem.category_icon} {poem.category_name}
+                  {poem.author_name && `${poem.author_name} • `}
+                  {poem.category_name}
                 </Text>
               </View>
             </View>
@@ -191,13 +187,15 @@ export default function ManagePoemsScreen({ user, onBack }) {
                 style={styles.editButton}
                 onPress={() => handleEditPoem(poem)}
               >
-                <Text style={styles.editButtonText}>✏️ Edit</Text>
+                <Ionicons name="create-outline" size={14} color="#fff" />
+                <Text style={styles.editButtonText}>Edit</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.deleteButton}
                 onPress={() => handleDeletePoem(poem)}
               >
-                <Text style={styles.deleteButtonText}>🗑️ Delete</Text>
+                <Ionicons name="trash-outline" size={14} color="#fff" />
+                <Text style={styles.deleteButtonText}>Delete</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -213,10 +211,10 @@ export default function ManagePoemsScreen({ user, onBack }) {
         >
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowForm(false)} style={styles.modalCloseButton}>
-              <Text style={styles.modalCloseText}>✕</Text>
+              <Ionicons name="close" size={24} color="#FF7700" />
             </TouchableOpacity>
             <Text style={styles.modalHeaderTitle}>
-              {editingPoem ? "✏️ Edit Poem" : "➕ Add New Poem"}
+              {editingPoem ? "Edit Poem" : "Add New Poem"}
             </Text>
             <TouchableOpacity 
               onPress={handleSavePoem} 
@@ -236,7 +234,7 @@ export default function ManagePoemsScreen({ user, onBack }) {
             showsVerticalScrollIndicator={false}
           >
             <View style={styles.formSection}>
-              <Text style={styles.formSectionTitle}>📝 Poem Details</Text>
+              <Text style={styles.formSectionTitle}>Poem Details</Text>
               
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>Title *</Text>
@@ -373,85 +371,7 @@ export default function ManagePoemsScreen({ user, onBack }) {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Add Category Modal */}
-      <Modal visible={showCategoryForm} animationType="slide" transparent={false}>
-        <KeyboardAvoidingView 
-          style={styles.fullScreenModal}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-        >
-          <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowCategoryForm(false)} style={styles.modalCloseButton}>
-              <Text style={styles.modalCloseText}>✕</Text>
-            </TouchableOpacity>
-            <Text style={styles.modalHeaderTitle}>📁 Add Category</Text>
-            <TouchableOpacity 
-              onPress={handleAddCategory} 
-              style={styles.modalSaveButton}
-              disabled={loading}
-            >
-              <Text style={styles.modalSaveText}>
-                {loading ? "..." : "Add"}
-              </Text>
-            </TouchableOpacity>
-          </View>
 
-          <ScrollView 
-            style={styles.modalScrollContent} 
-            contentContainerStyle={styles.modalScrollPadding}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            <View style={styles.formSection}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Category Name *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={categoryName}
-                  onChangeText={setCategoryName}
-                  placeholder="e.g., प्रेम, प्रकृति, देशभक्ति"
-                  placeholderTextColor="#666"
-                  returnKeyType="next"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Icon (Emoji)</Text>
-                <View style={styles.iconSelector}>
-                  {["📝", "❤️", "🌸", "🇮🇳", "🌙", "☀️", "🎭", "📖"].map(icon => (
-                    <TouchableOpacity
-                      key={icon}
-                      style={[
-                        styles.iconChip,
-                        categoryIcon === icon && styles.iconChipActive
-                      ]}
-                      onPress={() => setCategoryIcon(icon)}
-                    >
-                      <Text style={styles.iconChipText}>{icon}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Description</Text>
-                <TextInput
-                  style={[styles.input, styles.textAreaSmall]}
-                  value={categoryDescription}
-                  onChangeText={setCategoryDescription}
-                  placeholder="Optional description"
-                  placeholderTextColor="#666"
-                  multiline
-                  numberOfLines={3}
-                  textAlignVertical="top"
-                />
-              </View>
-            </View>
-
-            {/* Extra padding at bottom for keyboard */}
-            <View style={{ height: 100 }} />
-          </ScrollView>
-        </KeyboardAvoidingView>
-      </Modal>
     </View>
   );
 }
@@ -576,25 +496,31 @@ const styles = StyleSheet.create({
   },
   editButton: {
     flex: 1,
-    backgroundColor: "#2a2a2a",
+    flexDirection: 'row',
+    backgroundColor: "#2563eb",
     padding: 10,
     borderRadius: 8,
     alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
   },
   editButtonText: {
-    color: "#4299e1",
+    color: "#fff",
     fontSize: 14,
     fontWeight: "600",
   },
   deleteButton: {
     flex: 1,
-    backgroundColor: "#2a2a2a",
+    flexDirection: 'row',
+    backgroundColor: "#ef4444",
     padding: 10,
     borderRadius: 8,
     alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
   },
   deleteButtonText: {
-    color: "#f56565",
+    color: "#fff",
     fontSize: 14,
     fontWeight: "600",
   },

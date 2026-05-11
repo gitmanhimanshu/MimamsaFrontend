@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, StatusBar } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import API from "../api";
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
@@ -16,7 +17,7 @@ export default function ForgotPasswordScreen({ onBack, onOTPSent }) {
     setLoading(true);
     try {
       const res = await API.post("/app/forgot-password/send-otp/", { email });
-      alert("✓ OTP sent to your email!");
+      alert("OTP sent to your email!");
       onOTPSent(email);
     } catch (err) {
       const errorMsg = err.response?.data?.error || "Failed to send OTP";
@@ -35,12 +36,12 @@ export default function ForgotPasswordScreen({ onBack, onOTPSent }) {
       >
         <View style={styles.content}>
           <TouchableOpacity style={styles.backButton} onPress={onBack} activeOpacity={0.7}>
-            <Text style={styles.backButtonText}>← Back</Text>
+            <Ionicons name="arrow-back" size={24} color="#FF7700" />
           </TouchableOpacity>
 
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Text style={styles.icon}>🔐</Text>
+              <Ionicons name="lock-closed-outline" size={40} color={COLORS.primary} />
             </View>
             <Text style={styles.title}>Forgot Password?</Text>
             <Text style={styles.subtitle}>Enter your email to receive OTP</Text>
@@ -50,7 +51,7 @@ export default function ForgotPasswordScreen({ onBack, onOTPSent }) {
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email Address</Text>
               <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>✉️</Text>
+                <Ionicons name="mail-outline" size={20} color={COLORS.primary} style={styles.inputIcon} />
                 <TextInput 
                   placeholder="your@email.com" 
                   placeholderTextColor={COLORS.textMuted}

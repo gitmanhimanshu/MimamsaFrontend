@@ -15,6 +15,9 @@ import ProfileScreen from "../screens/ProfileScreen";
 import PoemsScreen from "../screens/PoemsScreen";
 import ManagePoemsScreen from "../screens/ManagePoemsScreen";
 import AddUserPoemScreen from "../screens/AddUserPoemScreen";
+import SavedItemsScreen from "../screens/SavedItemsScreen";
+import StoryViewerScreen from "../screens/StoryViewerScreen";
+import CreateStoryScreen from "../screens/CreateStoryScreen";
 import SplashScreen from "../screens/SplashScreen";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 
@@ -154,7 +157,7 @@ export default function RootLayout() {
       <SplashScreen onFinish={() => setShowSplash(false)} />
     ) : (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4299e1" />
+        <ActivityIndicator size="large" color="#FF7700" />
       </View>
     );
   }
@@ -218,6 +221,15 @@ export default function RootLayout() {
     case "ManagePoems":
       return <ManagePoemsScreen user={user} onBack={handleBack} />;
     
+    case "SavedItems":
+      return <SavedItemsScreen user={user} onBack={handleBack} onNavigate={handleNavigate} />;
+    
+    case "StoryViewer":
+      return <StoryViewerScreen userId={screenData?.storyUserId} viewerId={user?.id} onClose={handleBack} />;
+    
+    case "CreateStory":
+      return <CreateStoryScreen user={user} onBack={handleBack} onSuccess={() => {}} />;
+    
     case "BookDetail":
       return <BookDetailScreen book={screenData?.book} onBack={handleBack} onNavigate={handleNavigate} />;
     
@@ -246,6 +258,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f0f4f8',
+    backgroundColor: '#FFF5E6',
   },
 });

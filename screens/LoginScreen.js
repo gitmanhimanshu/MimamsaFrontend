@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, StatusBar } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import API from "../api";
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
@@ -42,7 +43,7 @@ export default function LoginScreen({ onSwitchToRegister, onLoginSuccess, onForg
         <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.iconContainer}>
-              <Text style={styles.icon}>📚</Text>
+              <Ionicons name="book-outline" size={40} color={COLORS.primary} />
             </View>
             <Text style={styles.title}>Welcome Back</Text>
             <Text style={styles.subtitle}>Sign in to continue reading</Text>
@@ -52,7 +53,7 @@ export default function LoginScreen({ onSwitchToRegister, onLoginSuccess, onForg
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Email Address</Text>
               <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>✉️</Text>
+                <Ionicons name="mail-outline" size={20} color={COLORS.primary} style={styles.inputIcon} />
                 <TextInput 
                   placeholder="your@email.com" 
                   placeholderTextColor={COLORS.textMuted}
@@ -73,7 +74,7 @@ export default function LoginScreen({ onSwitchToRegister, onLoginSuccess, onForg
                 </TouchableOpacity>
               </View>
               <View style={styles.inputWrapper}>
-                <Text style={styles.inputIcon}>🔒</Text>
+                <Ionicons name="lock-closed-outline" size={20} color={COLORS.primary} style={styles.inputIcon} />
                 <TextInput 
                   placeholder="Enter your password" 
                   placeholderTextColor={COLORS.textMuted}
@@ -87,7 +88,7 @@ export default function LoginScreen({ onSwitchToRegister, onLoginSuccess, onForg
                   style={styles.eyeButton}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                  <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={COLORS.textMuted} />
                 </TouchableOpacity>
               </View>
             </View>
@@ -185,7 +186,6 @@ const styles = StyleSheet.create({
     ...SHADOWS.sm,
   },
   inputIcon: {
-    fontSize: 20,
     marginRight: SPACING.sm,
   },
   input: {
@@ -196,9 +196,6 @@ const styles = StyleSheet.create({
   },
   eyeButton: {
     padding: SPACING.sm,
-  },
-  eyeIcon: {
-    fontSize: 20,
   },
   button: {
     backgroundColor: COLORS.primary,

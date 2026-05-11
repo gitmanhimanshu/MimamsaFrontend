@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Animated, Dimensions, ActivityIndicator } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import API from "../api";
 import ReviewModal from "../components/ReviewModal";
+import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
 const { width } = Dimensions.get('window');
 
@@ -164,7 +166,7 @@ export default function PoemsScreen({ onBack, userId, onNavigate }) {
             }} 
             style={styles.backButton}
           >
-            <Text style={styles.backButtonText}>←</Text>
+            <Ionicons name="arrow-back" size={24} color="#FF7700" />
           </TouchableOpacity>
           <Text style={styles.poemHeaderTitle} numberOfLines={1}>
             {selectedPoem?.title || ""}
@@ -218,7 +220,7 @@ export default function PoemsScreen({ onBack, userId, onNavigate }) {
               {(selectedPoem?.average_rating > 0) && (
                 <View style={styles.averageRating}>
                   <Text style={styles.averageRatingText}>
-                    {selectedPoem.average_rating} ★
+                    {selectedPoem.average_rating} <Ionicons name="star" size={14} color="#f59e0b" />
                   </Text>
                   <Text style={styles.reviewCount}>
                     ({selectedPoem.review_count || 0})
@@ -233,7 +235,7 @@ export default function PoemsScreen({ onBack, userId, onNavigate }) {
               onPress={() => setShowReviewModal(true)}
             >
               <Text style={styles.writeReviewIcon}>
-                {userReview ? "✏️" : "⭐"}
+                <Ionicons name={userReview ? "create-outline" : "star-outline"} size={18} color={COLORS.primary} />
               </Text>
               <Text style={styles.writeReviewText}>
                 {userReview ? "Edit Your Review" : "Write a Review"}
@@ -246,13 +248,16 @@ export default function PoemsScreen({ onBack, userId, onNavigate }) {
                 <View style={styles.userReviewHeader}>
                   <Text style={styles.yourReviewLabel}>Your Review</Text>
                   <TouchableOpacity onPress={handleDeleteReview}>
-                    <Text style={styles.deleteReviewText}>🗑️ Delete</Text>
+                    <View style={{flexDirection: 'row', alignItems: 'center', gap: 4}}>
+                      <Ionicons name="trash-outline" size={14} color={COLORS.error} />
+                      <Text style={styles.deleteReviewText}>Delete</Text>
+                    </View>
                   </TouchableOpacity>
                 </View>
                 <View style={styles.starsDisplay}>
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Text key={star} style={styles.starIcon}>
-                      {star <= userReview.rating ? "★" : "☆"}
+                      <Ionicons name={star <= userReview.rating ? "star" : "star-outline"} size={18} color="#f59e0b" />
                     </Text>
                   ))}
                 </View>
@@ -277,7 +282,7 @@ export default function PoemsScreen({ onBack, userId, onNavigate }) {
                       <View style={styles.starsDisplay}>
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Text key={star} style={styles.starIconSmall}>
-                            {star <= review.rating ? "★" : "☆"}
+                            <Ionicons name={star <= review.rating ? "star" : "star-outline"} size={14} color="#f59e0b" />
                           </Text>
                         ))}
                       </View>
@@ -316,14 +321,14 @@ export default function PoemsScreen({ onBack, userId, onNavigate }) {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
-          <Text style={styles.backButtonText}>←</Text>
+          <Ionicons name="arrow-back" size={24} color="#FF7700" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>कविताएँ</Text>
         <TouchableOpacity 
           onPress={() => onNavigate && onNavigate('AddUserPoem')}
           style={styles.addPoemButton}
         >
-          <Text style={styles.addPoemButtonText}>✍️</Text>
+          <Ionicons name="create-outline" size={24} color="#fff" />
         </TouchableOpacity>
       </View>
 
@@ -340,7 +345,7 @@ export default function PoemsScreen({ onBack, userId, onNavigate }) {
             >
               <View style={styles.myPoemsHeader}>
                 <View style={styles.myPoemsIcon}>
-                  <Text style={styles.myPoemsIconText}>✍️</Text>
+                  <Ionicons name="create-outline" size={18} color="#fff" />
                 </View>
                 <View style={styles.myPoemsInfo}>
                   <Text style={styles.myPoemsTitle}>My Poems</Text>
@@ -413,7 +418,7 @@ export default function PoemsScreen({ onBack, userId, onNavigate }) {
             <Text style={styles.loadingText}>Loading...</Text>
           ) : getFilteredPoems().length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyIcon}>📝</Text>
+              <Ionicons name="document-text-outline" size={48} color={COLORS.textMuted} />
               <Text style={styles.emptyText}>कोई कविता नहीं मिली</Text>
             </View>
           ) : (
@@ -489,7 +494,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#2a2a2a",
+    backgroundColor: "rgba(255,255,255,0.2)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -507,7 +512,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "#4299e1",
+    backgroundColor: "rgba(255,255,255,0.2)",
     justifyContent: "center",
     alignItems: "center",
   },

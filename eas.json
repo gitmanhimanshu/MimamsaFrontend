@@ -1,25 +1,44 @@
 {
   "cli": {
-    "version": ">= 5.0.0"
+    "version": ">= 5.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "production": {
+      "autoIncrement": true,
       "android": {
         "buildType": "apk",
-        "gradleCommand": ":app:assembleRelease",
-        "env": {
-          "API_BASE_URL": "https://mimamsabackend.onrender.com/api",
-          "ENV": "production"
-        }
+        "gradleCommand": ":app:assembleRelease"
+      },
+      "env": {
+        "API_BASE_URL": "https://mimamsabackend.onrender.com/api",
+        "ENV": "production",
+        "CLOUDINARY_CLOUD_NAME": "dbizsbr3w",
+        "CLOUDINARY_UPLOAD_PRESET": "punch_data"
+      }
+    },
+    "production-aab": {
+      "autoIncrement": true,
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "API_BASE_URL": "https://mimamsabackend.onrender.com/api",
+        "ENV": "production",
+        "CLOUDINARY_CLOUD_NAME": "dbizsbr3w",
+        "CLOUDINARY_UPLOAD_PRESET": "punch_data"
       }
     },
     "preview": {
+      "distribution": "internal",
       "android": {
-        "buildType": "apk",
-        "env": {
-          "API_BASE_URL": "https://mimamsabackend.onrender.com/api",
-          "ENV": "production"
-        }
+        "buildType": "apk"
+      },
+      "env": {
+        "API_BASE_URL": "https://mimamsabackend.onrender.com/api",
+        "ENV": "production",
+        "CLOUDINARY_CLOUD_NAME": "dbizsbr3w",
+        "CLOUDINARY_UPLOAD_PRESET": "punch_data"
       }
     },
     "development": {

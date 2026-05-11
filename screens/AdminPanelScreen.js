@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, FlatList, Alert, ActivityIndicator, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import API from "../api";
+import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
 export default function AdminPanelScreen({ user, onBack, onNavigate }) {
   const [books, setBooks] = useState([]);
@@ -116,7 +118,7 @@ export default function AdminPanelScreen({ user, onBack, onNavigate }) {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} activeOpacity={0.7}>
-          <Text style={styles.backButton}>← Back</Text>
+          <Ionicons name="arrow-back" size={24} color="#FF7700" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Admin Panel</Text>
         <View style={{ width: 60 }} />
@@ -173,7 +175,8 @@ export default function AdminPanelScreen({ user, onBack, onNavigate }) {
               onPress={() => onNavigate("ManagePoems")}
               activeOpacity={0.8}
             >
-              <Text style={styles.actionButtonText}>📝 Manage Poems</Text>
+              <Ionicons name="document-text-outline" size={18} color="#fff" style={{marginRight: 8}} />
+              <Text style={styles.actionButtonText}>Manage Poems</Text>
             </TouchableOpacity>
           </View>
 
@@ -208,16 +211,16 @@ export default function AdminPanelScreen({ user, onBack, onNavigate }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f0f4f8",
+    backgroundColor: COLORS.background,
   },
   header: {
-    backgroundColor: "#4299e1",
+    backgroundColor: COLORS.accent,
     padding: 20,
     paddingTop: 50,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    shadowColor: "#4299e1",
+    shadowColor: COLORS.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -241,7 +244,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   loadingText: {
-    color: "#718096",
+    color: COLORS.textSecondary,
     marginTop: 18,
     fontSize: 16,
     fontWeight: "600",
@@ -266,7 +269,7 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 36,
     fontWeight: "800",
-    color: "#4299e1",
+    color: COLORS.primary,
     letterSpacing: -0.5,
   },
   statLabel: {
@@ -281,11 +284,11 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   actionButton: {
-    backgroundColor: "#48bb78",
+    backgroundColor: COLORS.primary,
     padding: 18,
     borderRadius: 14,
     alignItems: "center",
-    shadowColor: "#48bb78",
+    shadowColor: COLORS.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -326,7 +329,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: "800",
-    color: "#1a202c",
+    color: COLORS.textPrimary,
     marginBottom: 16,
     letterSpacing: -0.3,
   },

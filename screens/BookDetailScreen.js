@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Animated, Dimensions, ActivityIndicator } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 import ReviewModal from "../components/ReviewModal";
 import API from "../api";
@@ -19,6 +20,11 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
   const [loadingReviews, setLoadingReviews] = useState(true);
+
+  // Social states
+  const [liked, setLiked] = useState(book.user_liked || false);
+  const [saved, setSaved] = useState(book.user_saved || false);
+  const [likeCount, setLikeCount] = useState(book.like_count || 0);
 
   useEffect(() => {
     // Entrance animations
@@ -149,6 +155,40 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
     }, 200);
   };
 
+  const toggleLike = async () => {
+    try {
+      const userId = await getUserId();
+      const newLiked = !liked;
+      setLiked(newLiked);
+      setLikeCount((prev) => (newLiked ? prev + 1 : prev - 1));
+      await API.post("/likes/toggle/", {
+        user_id: userId,
+        content_type: "book",
+        content_id: book.id,
+      });
+    } catch (error) {
+      setLiked(!liked);
+      setLikeCount((prev) => (liked ? prev + 1 : prev - 1));
+      console.error("Error toggling like:", error);
+    }
+  };
+
+  const toggleBookmark = async () => {
+    try {
+      const userId = await getUserId();
+      const newSaved = !saved;
+      setSaved(newSaved);
+      await API.post("/bookmarks/toggle/", {
+        user_id: userId,
+        content_type: "book",
+        content_id: book.id,
+      });
+    } catch (error) {
+      setSaved(!saved);
+      console.error("Error toggling bookmark:", error);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView 
@@ -170,7 +210,7 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
             onPress={onBack}
             activeOpacity={0.7}
           >
-            <Text style={styles.backButtonIcon}>←</Text>
+            <Ionicons name="arrow-back" size={24} color={COLORS.primary} />
           </TouchableOpacity>
         </Animated.View>
 
@@ -195,7 +235,7 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
             </>
           ) : (
             <View style={styles.coverPlaceholder}>
-              <Text style={styles.placeholderIcon}>📚</Text>
+              <Ionicons name="book-outline" size={48} color={COLORS.primary} />
               <Text style={styles.placeholderText}>No Cover</Text>
             </View>
           )}
@@ -220,7 +260,7 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
             
             {book.author_name && (
               <View style={styles.authorRow}>
-                <Text style={styles.authorIcon}>✍️</Text>
+                <Ionicons name="create-outline" size={16} color={COLORS.primary} style={styles.authorIcon} />
                 <Text style={styles.author}>{book.author_name}</Text>
               </View>
             )}
@@ -230,25 +270,25 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
           <View style={styles.metaContainer}>
             {book.category_name && (
               <View style={[styles.metaBadge, styles.categoryBadge]}>
-                <Text style={styles.metaIcon}>📂</Text>
+                <Ionicons name="folder-outline" size={14} color={COLORS.primary} style={styles.metaIcon} />
                 <Text style={styles.metaText}>{book.category_name}</Text>
               </View>
             )}
             {book.genre && (
               <View style={[styles.metaBadge, styles.genreBadge]}>
-                <Text style={styles.metaIcon}>🎭</Text>
+                <Ionicons name="film-outline" size={14} color={COLORS.primary} style={styles.metaIcon} />
                 <Text style={styles.metaText}>{book.genre}</Text>
               </View>
             )}
             {book.language && (
               <View style={[styles.metaBadge, styles.languageBadge]}>
-                <Text style={styles.metaIcon}>🌐</Text>
+                <Ionicons name="globe-outline" size={14} color={COLORS.primary} style={styles.metaIcon} />
                 <Text style={styles.metaText}>{book.language}</Text>
               </View>
             )}
             {book.published_year && (
               <View style={[styles.metaBadge, styles.yearBadge]}>
-                <Text style={styles.metaIcon}>📅</Text>
+                <Ionicons name="calendar-outline" size={14} color={COLORS.primary} style={styles.metaIcon} />
                 <Text style={styles.metaText}>{book.published_year}</Text>
               </View>
             )}
@@ -265,7 +305,10 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
           {/* Description */}
           {book.description && (
             <View style={styles.descriptionSection}>
-              <Text style={styles.sectionTitle}>📖 About this book</Text>
+              <View style={styles.sectionTitleRow}>
+                <Ionicons name="book-outline" size={18} color={COLORS.primary} />
+                <Text style={styles.sectionTitle}>About this book</Text>
+              </View>
               <Text style={styles.description}>{book.description}</Text>
             </View>
           )}
@@ -278,13 +321,11 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
               activeOpacity={0.9}
             >
               <View style={styles.readButtonContent}>
-                <Text style={styles.readButtonIcon}>
-                  {book.is_paid ? "💳" : "📖"}
-                </Text>
+                <Ionicons name={book.is_paid ? "card-outline" : "book-open-outline"} size={22} color={COLORS.white} />
                 <Text style={styles.readButtonText}>
                   {book.is_paid ? "Buy & Read Now" : "Read Now"}
                 </Text>
-                <Text style={styles.readButtonArrow}>→</Text>
+                <Ionicons name="arrow-forward" size={20} color={COLORS.white} />
               </View>
             </TouchableOpacity>
           </Animated.View>
@@ -292,9 +333,10 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
           {/* File Type Info */}
           {book.file_type && (
             <View style={styles.fileTypeInfo}>
-              <Text style={styles.fileTypeText}>
-                📄 Format: {book.file_type.toUpperCase()}
-              </Text>
+              <View style={styles.fileTypeRow}>
+                <Ionicons name="document-text-outline" size={16} color={COLORS.textSecondary} />
+                <Text style={styles.fileTypeText}>Format: {book.file_type.toUpperCase()}</Text>
+              </View>
             </View>
           )}
 
@@ -304,9 +346,10 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
               <Text style={styles.reviewsTitle}>Reviews & Ratings</Text>
               {book.average_rating > 0 && (
                 <View style={styles.averageRating}>
-                  <Text style={styles.averageRatingText}>
-                    {book.average_rating} ★
-                  </Text>
+                  <View style={styles.ratingRow}>
+                    <Text style={styles.averageRatingText}>{book.average_rating}</Text>
+                    <Ionicons name="star" size={14} color="#f59e0b" />
+                  </View>
                   <Text style={styles.reviewCount}>
                     ({book.review_count} {book.review_count === 1 ? 'review' : 'reviews'})
                   </Text>
@@ -319,9 +362,7 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
               style={styles.writeReviewButton}
               onPress={() => setShowReviewModal(true)}
             >
-              <Text style={styles.writeReviewIcon}>
-                {userReview ? "✏️" : "⭐"}
-              </Text>
+              <Ionicons name={userReview ? "create-outline" : "star-outline"} size={18} color={COLORS.primary} />
               <Text style={styles.writeReviewText}>
                 {userReview ? "Edit Your Review" : "Write a Review"}
               </Text>
@@ -333,13 +374,16 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
                 <View style={styles.userReviewHeader}>
                   <Text style={styles.yourReviewLabel}>Your Review</Text>
                   <TouchableOpacity onPress={handleDeleteReview}>
-                    <Text style={styles.deleteReviewText}>🗑️ Delete</Text>
+                    <View style={styles.deleteReviewRow}>
+                      <Ionicons name="trash-outline" size={14} color={COLORS.error} />
+                      <Text style={styles.deleteReviewText}>Delete</Text>
+                    </View>
                   </TouchableOpacity>
                 </View>
                 <View style={styles.starsDisplay}>
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Text key={star} style={styles.starIcon}>
-                      {star <= userReview.rating ? "★" : "☆"}
+                      <Ionicons name={star <= userReview.rating ? "star" : "star-outline"} size={18} color="#f59e0b" />
                     </Text>
                   ))}
                 </View>
@@ -364,7 +408,7 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
                       <View style={styles.starsDisplay}>
                         {[1, 2, 3, 4, 5].map((star) => (
                           <Text key={star} style={styles.starIconSmall}>
-                            {star <= review.rating ? "★" : "☆"}
+                            <Ionicons name={star <= review.rating ? "star" : "star-outline"} size={14} color="#f59e0b" />
                           </Text>
                         ))}
                       </View>
@@ -414,17 +458,12 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: BORDER_RADIUS.full,
-    backgroundColor: 'rgba(26, 26, 46, 0.95)',
+    backgroundColor: COLORS.surface,
     justifyContent: 'center',
     alignItems: 'center',
     ...SHADOWS.lg,
     borderWidth: 1,
-    borderColor: COLORS.primary,
-  },
-  backButtonIcon: {
-    fontSize: 24,
-    color: COLORS.primary,
-    fontWeight: '700',
+    borderColor: COLORS.border,
   },
   coverContainer: {
     width: width,
@@ -442,7 +481,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 150,
-    backgroundColor: 'rgba(26, 26, 46, 0.7)',
+    backgroundColor: 'rgba(255, 245, 230, 0.7)',
   },
   coverPlaceholder: {
     width: '100%',
@@ -616,6 +655,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   averageRatingText: {
     fontSize: 18,

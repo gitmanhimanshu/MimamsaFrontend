@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
-import API_BASE_URL from '../api';
+import { Ionicons } from '@expo/vector-icons';
+import API from '../api';
 
 const AddUserPoemScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
@@ -54,33 +55,25 @@ const AddUserPoemScreen = ({ navigation }) => {
 
     try {
       setLoading(true);
-      const userId = await AsyncStorage.getItem('userId');
+      const userJson = await AsyncStorage.getItem('@user_session');
+      const userData = userJson ? JSON.parse(userJson) : {};
+      const userId = userData.id;
       
-      const response = await fetch(`${API_BASE_URL}/user-poems/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...form,
-          user_id: userId,
-        }),
+      await API.post('/user-poems/', {
+        ...form,
+        user_id: userId,
       });
 
-      if (response.ok) {
-        Alert.alert('Success', 'Your poem has been published!', [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack(),
-          },
-        ]);
-      } else {
-        const error = await response.json();
-        Alert.alert('Error', error.error || 'Failed to publish poem');
-      }
+      Alert.alert('Success', 'Your poem has been published!', [
+        {
+          text: 'OK',
+          onPress: () => navigation.goBack(),
+        },
+      ]);
     } catch (error) {
       console.error('Error submitting poem:', error);
-      Alert.alert('Error', 'Failed to publish poem');
+      const errorMsg = error.response?.data?.error || 'Failed to publish poem';
+      Alert.alert('Error', errorMsg);
     } finally {
       setLoading(false);
     }
@@ -89,8 +82,8 @@ const AddUserPoemScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>← Back</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#FF7700" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Write Your Poem</Text>
         <View style={{ width: 60 }} />

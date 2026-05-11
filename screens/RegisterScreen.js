@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import API from "../api";
+import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
 export default function RegisterScreen({ onSwitchToLogin, onLoginSuccess }) {
   const [email, setEmail] = useState("");
@@ -74,7 +76,7 @@ export default function RegisterScreen({ onSwitchToLogin, onLoginSuccess }) {
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputIcon}>✉️</Text>
+              <Ionicons name="mail-outline" size={20} color={COLORS.primary} style={styles.inputIcon} />
               <TextInput 
                 placeholder="Enter your email" 
                 value={email}
@@ -89,7 +91,7 @@ export default function RegisterScreen({ onSwitchToLogin, onLoginSuccess }) {
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Username</Text>
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputIcon}>👤</Text>
+              <Ionicons name="person-outline" size={20} color={COLORS.primary} style={styles.inputIcon} />
               <TextInput 
                 placeholder="Choose a username" 
                 value={username}
@@ -103,7 +105,7 @@ export default function RegisterScreen({ onSwitchToLogin, onLoginSuccess }) {
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Password</Text>
             <View style={styles.inputWrapper}>
-              <Text style={styles.inputIcon}>🔒</Text>
+              <Ionicons name="lock-closed-outline" size={20} color={COLORS.primary} style={styles.inputIcon} />
               <TextInput 
                 placeholder="Create a password" 
                 value={password}
@@ -116,7 +118,7 @@ export default function RegisterScreen({ onSwitchToLogin, onLoginSuccess }) {
                 style={styles.eyeButton}
                 activeOpacity={0.7}
               >
-                <Text style={styles.eyeIcon}>{showPassword ? '👁️' : '👁️‍🗨️'}</Text>
+                <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={20} color={COLORS.textMuted} />
               </TouchableOpacity>
             </View>
           </View>
@@ -146,89 +148,74 @@ export default function RegisterScreen({ onSwitchToLogin, onLoginSuccess }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f0f4f8",
+    backgroundColor: COLORS.background,
   },
   content: {
     flex: 1,
     justifyContent: "center",
-    padding: 24,
+    padding: SPACING.xl,
   },
   header: {
-    marginBottom: 48,
+    marginBottom: SPACING.xxl,
     alignItems: "center",
   },
   title: {
-    fontSize: 36,
-    fontWeight: "800",
-    color: "#1a202c",
-    marginBottom: 12,
-    letterSpacing: -0.5,
+    ...TYPOGRAPHY.h1,
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.sm,
   },
   subtitle: {
-    fontSize: 17,
-    color: "#718096",
-    fontWeight: "500",
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
   },
   form: {
     width: "100%",
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: SPACING.lg,
   },
   label: {
-    fontSize: 15,
-    fontWeight: "700",
-    color: "#2d3748",
-    marginBottom: 10,
-    letterSpacing: 0.3,
+    ...TYPOGRAPHY.caption,
+    fontWeight: "600",
+    color: COLORS.textSecondary,
+    marginBottom: SPACING.sm,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 2,
-    borderColor: "#e2e8f0",
-    borderRadius: 14,
-    backgroundColor: "#fff",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    backgroundColor: COLORS.surface,
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: SPACING.md,
+    ...SHADOWS.sm,
   },
   inputIcon: {
-    fontSize: 20,
-    marginLeft: 18,
+    marginRight: SPACING.sm,
   },
   input: {
     flex: 1,
-    padding: 18,
+    padding: SPACING.md,
     fontSize: 16,
-    color: "#1a202c",
+    color: COLORS.textPrimary,
   },
   eyeButton: {
-    padding: 12,
-  },
-  eyeIcon: {
-    fontSize: 20,
+    padding: SPACING.sm,
   },
   button: {
-    backgroundColor: "#48bb78",
-    padding: 20,
-    borderRadius: 14,
+    backgroundColor: COLORS.primary,
+    padding: SPACING.md + 4,
+    borderRadius: BORDER_RADIUS.md,
     alignItems: "center",
-    marginTop: 16,
-    shadowColor: "#48bb78",
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 5,
+    marginTop: SPACING.md,
+    ...SHADOWS.lg,
   },
   buttonDisabled: {
-    backgroundColor: "#a0aec0",
+    backgroundColor: COLORS.gray[400],
     shadowOpacity: 0.1,
   },
   buttonText: {
-    color: "#fff",
+    color: COLORS.white,
     fontSize: 18,
     fontWeight: "800",
     letterSpacing: 0.5,
@@ -236,16 +223,15 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginTop: 32,
+    marginTop: SPACING.xl,
   },
   footerText: {
-    color: "#718096",
-    fontSize: 15,
-    fontWeight: "500",
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
   },
   link: {
-    color: "#4299e1",
-    fontSize: 15,
+    ...TYPOGRAPHY.body,
+    color: COLORS.primary,
     fontWeight: "700",
   },
 });
