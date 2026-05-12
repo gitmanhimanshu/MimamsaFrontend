@@ -54,7 +54,7 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
       setLoading(true);
       fadeAnim.setValue(0);
       const res = await API.get(`/feed/?user_id=${user.id}`);
-      const feedData = res.data?.results || res.data || [];
+      const feedData = res.data?.items || res.data?.results || res.data || [];
       setFeed(Array.isArray(feedData) ? feedData : []);
       Animated.timing(fadeAnim, {
         toValue: 1,
