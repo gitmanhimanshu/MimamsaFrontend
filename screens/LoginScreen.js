@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, StatusBar } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import API from "../api";
+import { isValidEmail } from "../utils/validators";
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
 export default function LoginScreen({ onSwitchToRegister, onLoginSuccess, onForgotPassword }) {
@@ -13,6 +14,10 @@ export default function LoginScreen({ onSwitchToRegister, onLoginSuccess, onForg
   const login = async () => {
     if (!email || !password) {
       alert("Please fill all fields");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      alert("Please enter a valid email address");
       return;
     }
 

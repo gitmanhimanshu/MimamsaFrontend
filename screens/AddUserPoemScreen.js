@@ -14,6 +14,15 @@ import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import API from '../api';
 
+// Genre options — must match the backend Poem.GENRE_CHOICES keys (see web AddUserPoemModal).
+const GENRES = [
+  { value: 'poetry', label: 'Poetry' },
+  { value: 'classical_poetry', label: 'Classical Poetry' },
+  { value: 'modern_poetry', label: 'Modern Poetry' },
+  { value: 'ghazal', label: 'Ghazal' },
+  { value: 'free_verse', label: 'Free Verse' },
+];
+
 const AddUserPoemScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -21,6 +30,7 @@ const AddUserPoemScreen = ({ navigation }) => {
     title: '',
     content: '',
     category: '',
+    genre: 'poetry',
     language: 'Hindi',
   });
 
@@ -30,16 +40,16 @@ const AddUserPoemScreen = ({ navigation }) => {
 
   const fetchCategories = async () => {
     try {
-      // Use static categories instead of API call
+      // Category keys must match the backend Poem.CATEGORY_CHOICES — string keys, not ids.
       const staticCategories = [
-        { id: 1, name: 'प्रेम कविता', icon: '💕' },
-        { id: 2, name: 'प्रकृति', icon: '🌿' },
-        { id: 3, name: 'देशभक्ति', icon: '🇮🇳' },
-        { id: 4, name: 'आध्यात्मिक', icon: '🕉️' },
-        { id: 5, name: 'सामाजिक', icon: '👥' },
-        { id: 6, name: 'प्रेरणादायक', icon: '💪' },
-        { id: 7, name: 'दुःख', icon: '😢' },
-        { id: 8, name: 'हास्य', icon: '😄' }
+        { id: 'love', name: 'प्रेम कविता', icon: '💕' },
+        { id: 'nature', name: 'प्रकृति', icon: '🌿' },
+        { id: 'patriotic', name: 'देशभक्ति', icon: '🇮🇳' },
+        { id: 'spiritual', name: 'आध्यात्मिक', icon: '🕉️' },
+        { id: 'social', name: 'सामाजिक', icon: '👥' },
+        { id: 'motivational', name: 'प्रेरणादायक', icon: '💪' },
+        { id: 'sad', name: 'दुःख', icon: '😢' },
+        { id: 'funny', name: 'हास्य', icon: '😄' },
       ];
       setCategories(staticCategories);
     } catch (error) {
@@ -123,6 +133,20 @@ const AddUserPoemScreen = ({ navigation }) => {
               <Picker.Item label="Select Category" value="" />
               {categories.map((cat) => (
                 <Picker.Item key={cat.id} label={cat.name} value={cat.id} />
+              ))}
+            </Picker>
+          </View>
+
+          <Text style={styles.label}>Genre *</Text>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={form.genre}
+              onValueChange={(value) => setForm({ ...form, genre: value })}
+              style={styles.picker}
+              dropdownIconColor="#fff"
+            >
+              {GENRES.map((g) => (
+                <Picker.Item key={g.value} label={g.label} value={g.value} />
               ))}
             </Picker>
           </View>

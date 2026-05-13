@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -15,13 +15,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 import FeedCard from "../components/FeedCard";
 import StoriesBar from "../components/StoriesBar";
+import CommentsModal from "../components/CommentsModal";
 import API from "../api";
 
 const FILTER_TABS = [
   { key: "all", label: "All" },
   { key: "book", label: "Books" },
   { key: "poem", label: "Poems" },
-  { key: "short_story", label: "Stories" },
+  { key: "story", label: "Stories" },
   { key: "audiobook", label: "Audio" },
   { key: "video", label: "Videos" },
   { key: "image", label: "Images" },
@@ -36,6 +37,8 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [menuVisible, setMenuVisible] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
+  const [commentsTarget, setCommentsTarget] = useState(null);
+  const commentDeltaRef = useRef(null);
 
   useEffect(() => {
     fetchFeed();
@@ -81,9 +84,11 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
     }
     let filtered = [...feed];
 
-    // Filter by type
+    // Backend feed items expose the discriminator as `type` (see UnifiedFeedView raw SQL).
     if (activeFilter !== "all") {
-      filtered = filtered.filter((item) => item && item.content_type === activeFilter);
+      filtered = filtered.filter(
+        (item) => item && (item.type || item.content_type) === activeFilter
+      );
     }
 
     // Filter by search
@@ -103,14 +108,26 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
   };
 
   const handleCardPress = (item) => {
-    if (item.content_type === "book") {
+    const itemType = item.type || item.content_type;
+    if (itemType === "book") {
       onNavigate("BookDetail", { book: item });
-    } else if (item.content_type === "poem") {
+    } else if (itemType === "poem") {
       onNavigate("Poems", { poem: item });
     } else {
-      // For other types, navigate to a generic detail or show alert
+      // story / audiobook / video / image: reuse BookDetail for now (shows title + content + cover).
       onNavigate("BookDetail", { book: item });
     }
+  };
+
+  const openComments = (item, contentType, updateCount) => {
+    commentDeltaRef.current = updateCount;
+    setCommentsTarget({ item, contentType });
+  };
+
+  const closeComments = (delta) => {
+    if (delta && commentDeltaRef.current) commentDeltaRef.current(delta);
+    commentDeltaRef.current = null;
+    setCommentsTarget(null);
   };
 
   const renderFilterTabs = () => (
@@ -258,12 +275,15 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
         <Animated.View style={{ flex: 1, opacity: fadeAnim }}>
           <FlatList
             data={filteredFeed}
-            keyExtractor={(item, index) => `${item.content_type}-${item.id}-${index}`}
+            keyExtractor={(item, index) =>
+              `${item.type || item.content_type}-${item.id}-${index}`
+            }
             renderItem={({ item }) => (
               <FeedCard
                 item={item}
                 userId={user?.id}
                 onPress={() => handleCardPress(item)}
+                onComment={openComments}
               />
             )}
             contentContainerStyle={styles.feedContent}
@@ -282,6 +302,15 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
           />
         </Animated.View>
       )}
+
+      {/* Comments Modal */}
+      <CommentsModal
+        visible={!!commentsTarget}
+        item={commentsTarget?.item}
+        contentType={commentsTarget?.contentType}
+        user={user}
+        onClose={closeComments}
+      />
 
       {/* Drawer */}
       {renderDrawer()}

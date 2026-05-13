@@ -6,8 +6,8 @@ import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constant
 
 export default function AdminPanelScreen({ user, onBack, onNavigate }) {
   const [books, setBooks] = useState([]);
-  const [categories, setCategories] = useState([]);
   const [authors, setAuthors] = useState([]);
+  const [poems, setPoems] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,14 +17,14 @@ export default function AdminPanelScreen({ user, onBack, onNavigate }) {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [booksRes, categoriesRes, authorsRes] = await Promise.all([
+      const [booksRes, authorsRes, poemsRes] = await Promise.all([
         API.get("/books/?show_all=true"),  // Fetch all books including inactive
-        API.get("/categories/"),
-        API.get("/authors/")
+        API.get("/authors/"),
+        API.get("/poems/"),
       ]);
-      setBooks(booksRes.data);
-      setCategories(categoriesRes.data);
-      setAuthors(authorsRes.data);
+      setBooks(Array.isArray(booksRes.data) ? booksRes.data : []);
+      setAuthors(Array.isArray(authorsRes.data) ? authorsRes.data : []);
+      setPoems(Array.isArray(poemsRes.data) ? poemsRes.data : []);
     } catch (err) {
       console.error("Error fetching data:", err);
     } finally {
@@ -137,8 +137,8 @@ export default function AdminPanelScreen({ user, onBack, onNavigate }) {
               <Text style={styles.statLabel}>Books</Text>
             </View>
             <View style={styles.statCard}>
-              <Text style={styles.statNumber}>{categories.length}</Text>
-              <Text style={styles.statLabel}>Categories</Text>
+              <Text style={styles.statNumber}>{poems.length}</Text>
+              <Text style={styles.statLabel}>Poems</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statNumber}>{authors.length}</Text>
@@ -147,7 +147,7 @@ export default function AdminPanelScreen({ user, onBack, onNavigate }) {
           </View>
 
           <View style={styles.actionsContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.actionButton}
               onPress={() => onNavigate("AddBook")}
               activeOpacity={0.8}
@@ -155,29 +155,53 @@ export default function AdminPanelScreen({ user, onBack, onNavigate }) {
               <Text style={styles.actionButtonText}>+ Add New Book</Text>
             </TouchableOpacity>
             <View style={styles.actionRow}>
-              <TouchableOpacity 
-                style={styles.actionButtonSmall}
-                onPress={() => onNavigate("ManageCategories")}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.actionButtonSmallText}>Manage Categories</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.actionButtonSmall}
                 onPress={() => onNavigate("ManageAuthors")}
                 activeOpacity={0.8}
               >
                 <Text style={styles.actionButtonSmallText}>Manage Authors</Text>
               </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButtonSmall, { backgroundColor: "#9f7aea" }]}
+                onPress={() => onNavigate("ManagePoems")}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.actionButtonSmallText}>Manage Poems</Text>
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: "#9f7aea" }]}
-              onPress={() => onNavigate("ManagePoems")}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="document-text-outline" size={18} color="#fff" style={{marginRight: 8}} />
-              <Text style={styles.actionButtonText}>Manage Poems</Text>
-            </TouchableOpacity>
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={[styles.actionButtonSmall, { backgroundColor: "#8b5cf6" }]}
+                onPress={() => onNavigate("ManageStories")}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.actionButtonSmallText}>Manage Stories</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButtonSmall, { backgroundColor: "#f59e0b" }]}
+                onPress={() => onNavigate("ManageAudiobooks")}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.actionButtonSmallText}>Manage Audiobooks</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.actionRow}>
+              <TouchableOpacity
+                style={[styles.actionButtonSmall, { backgroundColor: "#ef4444" }]}
+                onPress={() => onNavigate("ManageVideos")}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.actionButtonSmallText}>Manage Videos</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionButtonSmall, { backgroundColor: "#10b981" }]}
+                onPress={() => onNavigate("ManageImages")}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.actionButtonSmallText}>Manage Images</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.listSection}>

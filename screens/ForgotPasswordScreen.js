@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, StatusBar } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import API from "../api";
+import { isValidEmail } from "../utils/validators";
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
 export default function ForgotPasswordScreen({ onBack, onOTPSent }) {
@@ -11,6 +12,10 @@ export default function ForgotPasswordScreen({ onBack, onOTPSent }) {
   const sendOTP = async () => {
     if (!email) {
       alert("Please enter your email");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      alert("Please enter a valid email address");
       return;
     }
 

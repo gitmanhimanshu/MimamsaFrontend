@@ -7,15 +7,16 @@ import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constant
 
 const { width } = Dimensions.get('window');
 
-export default function PoemsScreen({ onBack, userId, onNavigate }) {
+export default function PoemsScreen({ onBack, userId, onNavigate, initialPoem }) {
   const [categories, setCategories] = useState([]);
   const [poems, setPoems] = useState([]);
   const [myPoems, setMyPoems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [selectedPoem, setSelectedPoem] = useState(null);
+  const [selectedPoem, setSelectedPoem] = useState(initialPoem || null);
   const [loading, setLoading] = useState(true);
   const [showMyPoems, setShowMyPoems] = useState(false);
-  
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+
   // Review states
   const [reviews, setReviews] = useState([]);
   const [userReview, setUserReview] = useState(null);
@@ -29,6 +30,18 @@ export default function PoemsScreen({ onBack, userId, onNavigate }) {
   }, []);
 
   useEffect(() => {
+    // Fade in when entering or switching the poem detail view.
+    if (selectedPoem) {
+      fadeAnim.setValue(0);
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 350,
+        useNativeDriver: true,
+      }).start();
+    }
+  }, [selectedPoem, fadeAnim]);
+
+  useEffect(() => {
     if (selectedPoem) {
       loadReviews();
     }
@@ -36,21 +49,21 @@ export default function PoemsScreen({ onBack, userId, onNavigate }) {
 
   const loadData = async () => {
     try {
-      // Use static categories instead of API call
+      // Backend Poem.category is a string key. These keys must match Poem.CATEGORY_CHOICES.
       const staticCategories = [
-        { id: 1, name: 'प्रेम कविता', icon: '💕' },
-        { id: 2, name: 'प्रकृति', icon: '🌿' },
-        { id: 3, name: 'देशभक्ति', icon: '🇮🇳' },
-        { id: 4, name: 'आध्यात्मिक', icon: '🕉️' },
-        { id: 5, name: 'सामाजिक', icon: '👥' },
-        { id: 6, name: 'प्रेरणादायक', icon: '💪' },
-        { id: 7, name: 'दुःख', icon: '😢' },
-        { id: 8, name: 'हास्य', icon: '😄' }
+        { id: 'love', name: 'प्रेम कविता', icon: '💕' },
+        { id: 'nature', name: 'प्रकृति', icon: '🌿' },
+        { id: 'patriotic', name: 'देशभक्ति', icon: '🇮🇳' },
+        { id: 'spiritual', name: 'आध्यात्मिक', icon: '🕉️' },
+        { id: 'social', name: 'सामाजिक', icon: '👥' },
+        { id: 'motivational', name: 'प्रेरणादायक', icon: '💪' },
+        { id: 'sad', name: 'दुःख', icon: '😢' },
+        { id: 'funny', name: 'हास्य', icon: '😄' },
       ];
-      
+
       const poemsRes = await API.get("/poems/");
       setCategories(staticCategories);
-      setPoems(poemsRes.data);
+      setPoems(Array.isArray(poemsRes.data) ? poemsRes.data : []);
     } catch (err) {
       console.error("Error loading poems:", err);
     } finally {
@@ -63,7 +76,7 @@ export default function PoemsScreen({ onBack, userId, onNavigate }) {
       const currentUserId = await getUserId();
       if (currentUserId) {
         const response = await API.get(`/user-poems/?user_id=${currentUserId}`);
-        setMyPoems(response.data);
+        setMyPoems(Array.isArray(response.data) ? response.data : []);
       }
     } catch (err) {
       console.error("Error loading my poems:", err);
@@ -91,16 +104,17 @@ export default function PoemsScreen({ onBack, userId, onNavigate }) {
 
   const loadReviews = async () => {
     if (!selectedPoem) return;
-    
+
     try {
       setLoadingReviews(true);
       const response = await API.get(`/poems/${selectedPoem.id}/reviews/`);
-      setReviews(response.data);
-      
+      const reviewList = Array.isArray(response.data) ? response.data : [];
+      setReviews(reviewList);
+
       // Check if current user has reviewed
       const currentUserId = await getUserId();
       if (currentUserId) {
-        const userReviewData = response.data.find(r => r.user === parseInt(currentUserId));
+        const userReviewData = reviewList.find(r => r.user === parseInt(currentUserId));
         setUserReview(userReviewData || null);
       }
     } catch (error) {
@@ -380,27 +394,30 @@ export default function PoemsScreen({ onBack, userId, onNavigate }) {
                   सभी
                 </Text>
               </TouchableOpacity>
-              {categories.map(cat => (
-                <TouchableOpacity
-                  key={cat.id}
-                  style={[
-                    styles.categoryChip,
-                    selectedCategory === cat.id && styles.categoryChipActive
-                  ]}
-                  onPress={() => filterPoems(cat.id)}
-                >
-                  <Text style={styles.categoryIcon}>{cat.icon}</Text>
-                  <Text style={[
-                    styles.categoryChipText,
-                    selectedCategory === cat.id && styles.categoryChipTextActive
-                  ]}>
-                    {cat.name}
-                  </Text>
-                  <View style={styles.categoryBadge}>
-                    <Text style={styles.categoryBadgeText}>{String(cat.poems_count || 0)}</Text>
-                  </View>
-                </TouchableOpacity>
-              ))}
+              {categories.map(cat => {
+                const count = poems.filter((p) => p.category === cat.id).length;
+                return (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[
+                      styles.categoryChip,
+                      selectedCategory === cat.id && styles.categoryChipActive
+                    ]}
+                    onPress={() => filterPoems(cat.id)}
+                  >
+                    <Text style={styles.categoryIcon}>{cat.icon}</Text>
+                    <Text style={[
+                      styles.categoryChipText,
+                      selectedCategory === cat.id && styles.categoryChipTextActive
+                    ]}>
+                      {cat.name}
+                    </Text>
+                    <View style={styles.categoryBadge}>
+                      <Text style={styles.categoryBadgeText}>{String(count)}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
             </ScrollView>
           </View>
         )}
@@ -422,20 +439,10 @@ export default function PoemsScreen({ onBack, userId, onNavigate }) {
               <Text style={styles.emptyText}>कोई कविता नहीं मिली</Text>
             </View>
           ) : (
-            getFilteredPoems().map((poem, index) => (
+            getFilteredPoems().map((poem) => (
               <TouchableOpacity
                 key={poem.id}
-                style={[
-                  styles.poemCard,
-                  { 
-                    transform: [{ 
-                      translateY: new Animated.Value(50 * (index % 3)).interpolate({
-                        inputRange: [0, 50],
-                        outputRange: [0, 0]
-                      })
-                    }]
-                  }
-                ]}
+                style={styles.poemCard}
                 onPress={() => setSelectedPoem(poem)}
                 activeOpacity={0.8}
               >

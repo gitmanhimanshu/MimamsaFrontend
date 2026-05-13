@@ -5,7 +5,7 @@ import { Picker } from "@react-native-picker/picker";
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import Constants from "expo-constants";
-import API from "../api";
+import API, { uploadImage, uploadPDF, uploadText } from "../api";
 import { COLORS } from "../constants/theme";
 
 export default function AddBookScreen({ user, onBack, onNavigate, book = null }) {
@@ -103,33 +103,27 @@ export default function AddBookScreen({ user, onBack, onNavigate, book = null })
   };
 
   const uploadToCloudinary = async (uri, resourceType = "image") => {
-    const formData = new FormData();
-    const fileType = resourceType === "image" ? "image/jpeg" : 
-                     uri.endsWith('.pdf') ? "application/pdf" : 
-                     uri.endsWith('.epub') ? "application/epub+zip" : 
+    const fileType = resourceType === "image" ? "image/jpeg" :
+                     uri.endsWith('.pdf') ? "application/pdf" :
+                     uri.endsWith('.epub') ? "application/epub+zip" :
                      "text/plain";
-    const fileName = resourceType === "image" ? `cover_${Date.now()}.jpg` : 
+    const fileName = resourceType === "image" ? `cover_${Date.now()}.jpg` :
                      `book_${Date.now()}.${uri.split('.').pop()}`;
-    
-    formData.append("file", {
-      uri,
-      type: fileType,
-      name: fileName
-    });
+
+    const file = { uri, type: fileType, name: fileName };
 
     try {
-      // Use backend endpoints for secure upload
-      const endpoint = resourceType === "image" ? "/upload/image/" : 
-                       uri.endsWith('.txt') ? "/upload/text/" : 
-                       "/upload/pdf/";
-      
-      const response = await API.post(endpoint, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      
-      return response.data.url;
+      // Use the dedicated upload helpers from api.js (raw axios, no inherited
+      // application/json header that strips the multipart boundary).
+      let data;
+      if (resourceType === "image") {
+        data = await uploadImage(file);
+      } else if (uri.endsWith('.txt')) {
+        data = await uploadText(file);
+      } else {
+        data = await uploadPDF(file);
+      }
+      return data.url;
     } catch (error) {
       console.error("Upload error:", error);
       throw error;
@@ -190,8 +184,18 @@ export default function AddBookScreen({ user, onBack, onNavigate, book = null })
   };
 
   const handleSubmit = async () => {
+    // Mirror web AddBookModal: title and published_year are the required fields.
     if (!title || title.trim() === "") {
       Alert.alert("Required", "Please enter a book title");
+      return;
+    }
+    if (!publishedYear || publishedYear.trim() === "") {
+      Alert.alert("Required", "Please enter the published year");
+      return;
+    }
+    // Defense-in-depth — backend also rejects non-admins, but warn the user clearly.
+    if (!user?.is_admin) {
+      Alert.alert("Permission denied", "Only admins can create or edit books.");
       return;
     }
 
@@ -369,7 +373,7 @@ export default function AddBookScreen({ user, onBack, onNavigate, book = null })
               />
             </View>
             <View style={[styles.inputGroup, styles.halfWidth]}>
-              <Text style={styles.label}>Year</Text>
+              <Text style={styles.label}>Year *</Text>
               <TextInput
                 style={styles.input}
                 value={publishedYear}

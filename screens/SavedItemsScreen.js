@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   Animated,
+  RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
@@ -16,7 +17,7 @@ import API from "../api";
 const TYPE_LABELS = {
   book: "Book",
   poem: "Poem",
-  short_story: "Story",
+  story: "Story",
   audiobook: "Audiobook",
   video: "Video",
   image: "Image",
@@ -25,26 +26,56 @@ const TYPE_LABELS = {
 const TYPE_COLORS = {
   book: "#3b82f6",
   poem: "#ec4899",
-  short_story: "#8b5cf6",
+  story: "#8b5cf6",
   audiobook: "#f59e0b",
   video: "#ef4444",
   image: "#10b981",
 };
 
+// Maps a bookmark's content_type to the GET endpoint that returns the item details.
+const DETAIL_ENDPOINTS = {
+  book: "/books/",
+  poem: "/poems/",
+  story: "/short-stories/",
+  audiobook: "/audiobooks/",
+  video: "/videos/",
+  image: "/images/",
+};
+
 export default function SavedItemsScreen({ user, onBack, onNavigate }) {
   const [savedItems, setSavedItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
 
-  useEffect(() => {
-    fetchSavedItems();
-  }, []);
-
-  const fetchSavedItems = async () => {
+  const fetchSavedItems = useCallback(async () => {
+    if (!user?.id) {
+      setLoading(false);
+      return;
+    }
     try {
       setLoading(true);
       const res = await API.get(`/bookmarks/?user_id=${user.id}`);
-      setSavedItems(res.data || []);
+      // Backend returns { count, bookmarks: [...] } — unwrap.
+      const bookmarks = res.data?.bookmarks || [];
+
+      // Each bookmark only carries the id + content_type + content_id. Fetch the
+      // actual item details in parallel (matches Web SavedItems behavior).
+      const enriched = await Promise.all(
+        bookmarks.map(async (bm) => {
+          const endpoint = DETAIL_ENDPOINTS[bm.content_type];
+          if (!endpoint) return { ...bm, content_data: null };
+          try {
+            const detail = await API.get(`${endpoint}${bm.content_id}/`);
+            return { ...bm, content_data: detail.data };
+          } catch (err) {
+            // Item may have been deleted — keep the bookmark row but mark missing.
+            return { ...bm, content_data: null };
+          }
+        })
+      );
+
+      setSavedItems(enriched);
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 400,
@@ -54,8 +85,18 @@ export default function SavedItemsScreen({ user, onBack, onNavigate }) {
       console.error("Error fetching saved items:", err);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
-  };
+  }, [user?.id, fadeAnim]);
+
+  useEffect(() => {
+    fetchSavedItems();
+  }, [fetchSavedItems]);
+
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchSavedItems();
+  }, [fetchSavedItems]);
 
   const handleUnsave = async (item) => {
     try {
@@ -70,20 +111,36 @@ export default function SavedItemsScreen({ user, onBack, onNavigate }) {
     }
   };
 
+  const handleOpen = (bookmark) => {
+    if (!bookmark.content_data) return;
+    if (bookmark.content_type === "book") {
+      onNavigate("BookDetail", { book: bookmark.content_data });
+    } else if (bookmark.content_type === "poem") {
+      onNavigate("Poems", { poem: bookmark.content_data });
+    } else {
+      onNavigate("BookDetail", { book: bookmark.content_data });
+    }
+  };
+
   const renderItem = ({ item }) => {
-    const content = item.content_data || item;
-    const contentType = content.content_type || item.content_type || "book";
+    const content = item.content_data || {};
+    const contentType = item.content_type || "book";
     const typeLabel = TYPE_LABELS[contentType] || "Content";
     const typeColor = TYPE_COLORS[contentType] || COLORS.primary;
     const imageUrl =
-      content.cover_image_url || content.thumbnail_url || content.image_url || content.background_image_url;
+      content.cover_image_url ||
+      content.thumbnail_url ||
+      content.image_url ||
+      content.background_image_url;
+    const missing = !item.content_data;
 
     return (
       <View style={styles.card}>
         <TouchableOpacity
           style={styles.cardContent}
-          onPress={() => onNavigate("BookDetail", { book: content })}
+          onPress={() => handleOpen(item)}
           activeOpacity={0.9}
+          disabled={missing}
         >
           {imageUrl ? (
             <Image source={{ uri: imageUrl }} style={styles.coverImage} resizeMode="cover" />
@@ -99,10 +156,10 @@ export default function SavedItemsScreen({ user, onBack, onNavigate }) {
               </View>
             </View>
             <Text style={styles.title} numberOfLines={2}>
-              {content.title || "Untitled"}
+              {missing ? "Item no longer available" : content.title || "Untitled"}
             </Text>
             <Text style={styles.author} numberOfLines={1}>
-              {content.author_name || content.user_name || "Unknown"}
+              {content.author_name || content.user_name || (missing ? "" : "Unknown")}
             </Text>
           </View>
         </TouchableOpacity>
@@ -138,6 +195,13 @@ export default function SavedItemsScreen({ user, onBack, onNavigate }) {
             renderItem={renderItem}
             contentContainerStyle={styles.listContent}
             showsVerticalScrollIndicator={false}
+            refreshControl={
+              <RefreshControl
+                refreshing={refreshing}
+                onRefresh={onRefresh}
+                colors={[COLORS.primary]}
+              />
+            }
             ListEmptyComponent={
               <View style={styles.emptyContainer}>
                 <Ionicons name="bookmark-outline" size={48} color={COLORS.textMuted} />

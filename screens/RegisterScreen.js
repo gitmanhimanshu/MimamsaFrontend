@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import API from "../api";
+import { isValidEmail } from "../utils/validators";
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
 export default function RegisterScreen({ onSwitchToLogin, onLoginSuccess }) {
@@ -14,6 +15,14 @@ export default function RegisterScreen({ onSwitchToLogin, onLoginSuccess }) {
   const register = async () => {
     if (!email || !username || !password) {
       alert("Please fill all fields");
+      return;
+    }
+    if (!isValidEmail(email)) {
+      alert("Please enter a valid email address");
+      return;
+    }
+    if (password.length < 6) {
+      alert("Password must be at least 6 characters");
       return;
     }
 

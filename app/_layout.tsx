@@ -18,6 +18,8 @@ import AddUserPoemScreen from "../screens/AddUserPoemScreen";
 import SavedItemsScreen from "../screens/SavedItemsScreen";
 import StoryViewerScreen from "../screens/StoryViewerScreen";
 import CreateStoryScreen from "../screens/CreateStoryScreen";
+import ManageContentScreen from "../screens/ManageContentScreen";
+import { CONTENT_CONFIGS } from "../screens/contentConfigs";
 import SplashScreen from "../screens/SplashScreen";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 
@@ -207,13 +209,43 @@ export default function RootLayout() {
       />;
   }
 
+  // Admin-only screens — mirror web's <ProtectedRoute adminOnly> redirect.
+  // The drawer already hides these entry points, but a defense-in-depth check
+  // here ensures direct calls to handleNavigate('AdminPanel', ...) cannot
+  // bypass authorization.
+  const ADMIN_ONLY_SCREENS = new Set([
+    "AdminPanel",
+    "AddBook",
+    "EditBook",
+    "ManageAuthors",
+    "ManagePoems",
+    "ManageStories",
+    "ManageAudiobooks",
+    "ManageVideos",
+    "ManageImages",
+  ]);
+  const isAdminScreenBlocked =
+    ADMIN_ONLY_SCREENS.has(currentScreen) && !user.is_admin;
+
+  if (isAdminScreenBlocked) {
+    // Render Home directly — same outcome as web's <Navigate to="/" />.
+    return <HomeScreen user={user} onLogout={handleLogout} onNavigate={handleNavigate} />;
+  }
+
   // User is logged in, show app screens
   switch (currentScreen) {
     case "Profile":
       return <ProfileScreen user={user} onBack={handleBack} onUpdateUser={handleUpdateUser} />;
     
     case "Poems":
-      return <PoemsScreen onBack={handleBack} userId={user?.id} onNavigate={handleNavigate} />;
+      return (
+        <PoemsScreen
+          onBack={handleBack}
+          userId={user?.id}
+          onNavigate={handleNavigate}
+          initialPoem={screenData?.poem}
+        />
+      );
     
     case "AddUserPoem":
       return <AddUserPoemScreen navigation={{ goBack: handleBack }} />;
@@ -244,10 +276,22 @@ export default function RootLayout() {
     
     case "AddBook":
       return <AddBookScreen user={user} onBack={handleBack} onNavigate={handleNavigate} />;
-    
+
     case "EditBook":
       return <AddBookScreen user={user} onBack={handleBack} onNavigate={handleNavigate} book={screenData?.book} />;
-    
+
+    case "ManageStories":
+      return <ManageContentScreen user={user} config={CONTENT_CONFIGS.story} onBack={handleBack} />;
+
+    case "ManageAudiobooks":
+      return <ManageContentScreen user={user} config={CONTENT_CONFIGS.audiobook} onBack={handleBack} />;
+
+    case "ManageVideos":
+      return <ManageContentScreen user={user} config={CONTENT_CONFIGS.video} onBack={handleBack} />;
+
+    case "ManageImages":
+      return <ManageContentScreen user={user} config={CONTENT_CONFIGS.image} onBack={handleBack} />;
+
     default:
       return <HomeScreen user={user} onLogout={handleLogout} onNavigate={handleNavigate} />;
   }

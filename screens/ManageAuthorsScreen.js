@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, FlatList, Alert, ActivityIndicator, Image, ScrollView, StyleSheet } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import API from "../api";
+import API, { uploadImage } from "../api";
 
 export default function ManageAuthorsScreen({ user, onBack, onAuthorAdded }) {
   const [authors, setAuthors] = useState([]);
@@ -49,18 +49,15 @@ export default function ManageAuthorsScreen({ user, onBack, onAuthorAdded }) {
     if (!result.canceled) {
       setUploading(true);
       try {
-        const formData = new FormData();
-        formData.append("file", {
+        // Use the dedicated helper — the shared API instance defaults to
+        // application/json which strips the multipart boundary on uploads.
+        const data = await uploadImage({
           uri: result.assets[0].uri,
           type: "image/jpeg",
-          name: `author_${Date.now()}.jpg`
+          name: `author_${Date.now()}.jpg`,
         });
 
-        const response = await API.post("/upload/image/", formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        
-        setPhotoUrl(response.data.url);
+        setPhotoUrl(data.url);
         Alert.alert("✓ Success", "Photo uploaded!");
       } catch (err) {
         Alert.alert("Error", "Failed to upload photo.");

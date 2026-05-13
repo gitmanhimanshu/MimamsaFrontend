@@ -57,17 +57,15 @@ export default function CreateStoryScreen({ user, onBack, onSuccess }) {
         setPreviewUri(uri);
         setUploading(true);
 
-        const formData = new FormData();
-        formData.append("file", {
+        // Use the dedicated uploadImage helper which uses raw axios — the shared
+        // API instance defaults to application/json, which clobbers the
+        // multipart boundary when reused for file uploads.
+        const data = await uploadImage({
           uri,
           type: "image/jpeg",
           name: `story_${Date.now()}.jpg`,
         });
-
-        const res = await API.post("/upload/image/", formData, {
-          headers: { "Content-Type": "multipart/form-data" },
-        });
-        setImageUrl(res.data.url || res.data.secure_url);
+        setImageUrl(data.url || data.secure_url);
       }
     } catch (err) {
       console.error("Error uploading image:", err);

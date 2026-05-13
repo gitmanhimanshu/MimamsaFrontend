@@ -7,7 +7,7 @@ import API from "../api";
 const TYPE_LABELS = {
   book: "Book",
   poem: "Poem",
-  short_story: "Story",
+  story: "Story",
   audiobook: "Audiobook",
   video: "Video",
   image: "Image",
@@ -16,18 +16,20 @@ const TYPE_LABELS = {
 const TYPE_COLORS = {
   book: "#3b82f6",
   poem: "#ec4899",
-  short_story: "#8b5cf6",
+  story: "#8b5cf6",
   audiobook: "#f59e0b",
   video: "#ef4444",
   image: "#10b981",
 };
 
-export default function FeedCard({ item, userId, onPress }) {
+export default function FeedCard({ item, userId, onPress, onComment }) {
   const [liked, setLiked] = useState(item.user_liked || false);
   const [saved, setSaved] = useState(item.user_saved || false);
   const [likeCount, setLikeCount] = useState(item.like_count || 0);
+  const [commentCount, setCommentCount] = useState(item.comment_count || 0);
 
-  const contentType = item.content_type || "book";
+  // Backend feed returns `type`; other endpoints return `content_type`. Support both.
+  const contentType = item.type || item.content_type || "book";
   const typeLabel = TYPE_LABELS[contentType] || "Content";
   const typeColor = TYPE_COLORS[contentType] || COLORS.primary;
 
@@ -66,7 +68,13 @@ export default function FeedCard({ item, userId, onPress }) {
     }
   };
 
-  const imageUrl = item.cover_image_url || item.thumbnail_url || item.image_url || item.background_image_url;
+  // Feed uses `cover_image`; detail endpoints use `cover_image_url`/`thumbnail_url`/`image_url`/`background_image_url`.
+  const imageUrl =
+    item.cover_image ||
+    item.cover_image_url ||
+    item.thumbnail_url ||
+    item.image_url ||
+    item.background_image_url;
 
   return (
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.9}>
@@ -122,10 +130,19 @@ export default function FeedCard({ item, userId, onPress }) {
           </Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.actionButton} activeOpacity={0.7}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          activeOpacity={0.7}
+          onPress={() =>
+            onComment &&
+            onComment(item, contentType, (delta) =>
+              setCommentCount((prev) => Math.max(0, prev + delta))
+            )
+          }
+        >
           <Ionicons name="chatbubble-outline" size={20} color={COLORS.textSecondary} />
           <Text style={styles.actionText}>
-            {item.comment_count > 0 ? item.comment_count : "Comment"}
+            {commentCount > 0 ? commentCount : "Comment"}
           </Text>
         </TouchableOpacity>
 

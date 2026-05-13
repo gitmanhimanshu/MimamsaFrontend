@@ -24,10 +24,6 @@ export default {
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
-      // APK Size Optimizations
-      enableProguardInReleaseBuilds: true,
-      enableShrinkResourcesInReleaseBuilds: true,
-      extraProguardRules: "-keep public class com.horcrux.svg.** {*;}",
       // Only include required permissions
       permissions: [
         "INTERNET",
@@ -51,6 +47,27 @@ export default {
           backgroundColor: "#FFF5E6",
           dark: {
             backgroundColor: "#FFF5E6"
+          }
+        }
+      ],
+      // Release-build size optimizations. Previously these flags were placed
+      // directly under `expo.android` (which Expo silently ignores) — they must
+      // live inside the expo-build-properties plugin to actually take effect.
+      [
+        "expo-build-properties",
+        {
+          android: {
+            // Strip + obfuscate unused Java/Kotlin code in release builds.
+            enableProguardInReleaseBuilds: true,
+            // Strip unused Android resources (drawables, strings, layouts).
+            enableShrinkResourcesInReleaseBuilds: true,
+            // Keep SVG runtime classes the bundler emits dynamically.
+            extraProguardRules: "-keep public class com.horcrux.svg.** {*;}",
+            // Emit a separate APK per CPU architecture instead of one fat
+            // APK that ships native libs for every arch. Cuts per-APK size
+            // roughly in half. universalApk:false skips the fat APK.
+            enableSeparateBuildPerCPUArchitecture: true,
+            universalApk: false
           }
         }
       ]

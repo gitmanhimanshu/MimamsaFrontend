@@ -1,22 +1,36 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, Modal, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, Alert, Modal, KeyboardAvoidingView, Platform, Image, ActivityIndicator } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import API from "../api";
+import * as ImagePicker from "expo-image-picker";
+import API, { uploadImage } from "../api";
 
 export default function ManagePoemsScreen({ user, onBack }) {
   const [poems, setPoems] = useState([]);
   const [categories, setCategories] = useState([]);
   const [authors, setAuthors] = useState([]);
   const [loading, setLoading] = useState(false);
-  
+
   // Form states
   const [showForm, setShowForm] = useState(false);
   const [editingPoem, setEditingPoem] = useState(null);
   const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
   const [content, setContent] = useState("");
   const [selectedAuthor, setSelectedAuthor] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
+  const [genre, setGenre] = useState("poetry");
   const [language, setLanguage] = useState("Hindi");
+  const [backgroundImageUrl, setBackgroundImageUrl] = useState("");
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  // Genre options must match backend Poem.GENRE_CHOICES (matches web AddPoemModal).
+  const GENRES = [
+    { value: "poetry", label: "Poetry" },
+    { value: "classical_poetry", label: "Classical Poetry" },
+    { value: "modern_poetry", label: "Modern Poetry" },
+    { value: "ghazal", label: "Ghazal" },
+    { value: "free_verse", label: "Free Verse" },
+  ];
   
   // Category form - removed since using static categories
 
@@ -31,21 +45,21 @@ export default function ManagePoemsScreen({ user, onBack }) {
         API.get("/authors/")
       ]);
       
-      // Use static categories
+      // Static categories — keys must match backend Poem.CATEGORY_CHOICES string values.
       const staticCategories = [
-        { id: 1, name: 'प्रेम कविता', icon: '💕' },
-        { id: 2, name: 'प्रकृति', icon: '🌿' },
-        { id: 3, name: 'देशभक्ति', icon: '🇮🇳' },
-        { id: 4, name: 'आध्यात्मिक', icon: '🕉️' },
-        { id: 5, name: 'सामाजिक', icon: '👥' },
-        { id: 6, name: 'प्रेरणादायक', icon: '💪' },
-        { id: 7, name: 'दुःख', icon: '😢' },
-        { id: 8, name: 'हास्य', icon: '😄' }
+        { id: 'love', name: 'प्रेम कविता', icon: '💕' },
+        { id: 'nature', name: 'प्रकृति', icon: '🌿' },
+        { id: 'patriotic', name: 'देशभक्ति', icon: '🇮🇳' },
+        { id: 'spiritual', name: 'आध्यात्मिक', icon: '🕉️' },
+        { id: 'social', name: 'सामाजिक', icon: '👥' },
+        { id: 'motivational', name: 'प्रेरणादायक', icon: '💪' },
+        { id: 'sad', name: 'दुःख', icon: '😢' },
+        { id: 'funny', name: 'हास्य', icon: '😄' },
       ];
-      
-      setPoems(poemsRes.data);
+
+      setPoems(Array.isArray(poemsRes.data) ? poemsRes.data : []);
       setCategories(staticCategories);
-      setAuthors(authorsRes.data);
+      setAuthors(Array.isArray(authorsRes.data) ? authorsRes.data : []);
     } catch (err) {
       console.error("Error loading data:", err);
       Alert.alert("Error", "Failed to load data");
@@ -55,21 +69,55 @@ export default function ManagePoemsScreen({ user, onBack }) {
   const handleAddPoem = () => {
     setEditingPoem(null);
     setTitle("");
+    setDescription("");
     setContent("");
     setSelectedAuthor("");
     setSelectedCategory("");
+    setGenre("poetry");
     setLanguage("Hindi");
+    setBackgroundImageUrl("");
     setShowForm(true);
   };
 
   const handleEditPoem = (poem) => {
     setEditingPoem(poem);
     setTitle(poem.title);
+    setDescription(poem.description || "");
     setContent(poem.content);
     setSelectedAuthor(poem.author?.toString() || "");
     setSelectedCategory(poem.category?.toString() || "");
+    setGenre(poem.genre || "poetry");
     setLanguage(poem.language || "Hindi");
+    setBackgroundImageUrl(poem.background_image_url || "");
     setShowForm(true);
+  };
+
+  const pickBackgroundImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission Required", "Please allow access to your photos.");
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: false,
+      quality: 0.8,
+    });
+    if (result.canceled) return;
+    try {
+      setUploadingImage(true);
+      const data = await uploadImage({
+        uri: result.assets[0].uri,
+        type: "image/jpeg",
+        name: `poem_bg_${Date.now()}.jpg`,
+      });
+      setBackgroundImageUrl(data.url);
+    } catch (err) {
+      console.error("Error uploading poem image:", err);
+      Alert.alert("Error", "Failed to upload image.");
+    } finally {
+      setUploadingImage(false);
+    }
   };
 
   const handleSavePoem = async () => {
@@ -82,10 +130,13 @@ export default function ManagePoemsScreen({ user, onBack }) {
     try {
       const poemData = {
         title: title.trim(),
+        description: description.trim(),
         content: content.trim(),
         author: selectedAuthor || null,
         category: selectedCategory || null,
+        genre: genre || "poetry",
         language: language,
+        background_image_url: backgroundImageUrl || "",
         user_id: user.id
       };
 
@@ -249,6 +300,20 @@ export default function ManagePoemsScreen({ user, onBack }) {
               </View>
 
               <View style={styles.inputGroup}>
+                <Text style={styles.label}>Description (optional)</Text>
+                <TextInput
+                  style={[styles.input, { minHeight: 60 }]}
+                  value={description}
+                  onChangeText={setDescription}
+                  placeholder="Short description or summary"
+                  placeholderTextColor="#666"
+                  multiline
+                  numberOfLines={2}
+                  textAlignVertical="top"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
                 <Text style={styles.label}>Content * (Full Poem)</Text>
                 <TextInput
                   style={[styles.input, styles.textArea]}
@@ -260,6 +325,36 @@ export default function ManagePoemsScreen({ user, onBack }) {
                   numberOfLines={10}
                   textAlignVertical="top"
                 />
+              </View>
+            </View>
+
+            <View style={styles.formSection}>
+              <Text style={styles.formSectionTitle}>Cover Image</Text>
+              <View style={styles.inputGroup}>
+                <TouchableOpacity
+                  style={styles.uploadButton}
+                  onPress={pickBackgroundImage}
+                  disabled={uploadingImage}
+                  activeOpacity={0.8}
+                >
+                  {uploadingImage ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="cloud-upload-outline" size={18} color="#fff" />
+                      <Text style={styles.uploadButtonText}>
+                        {backgroundImageUrl ? "Replace Cover Image" : "Upload Cover Image (optional)"}
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+                {backgroundImageUrl ? (
+                  <Image
+                    source={{ uri: backgroundImageUrl }}
+                    style={styles.imagePreview}
+                    resizeMode="cover"
+                  />
+                ) : null}
               </View>
             </View>
 
@@ -338,6 +433,32 @@ export default function ManagePoemsScreen({ user, onBack }) {
                         styles.pickerChipText,
                         selectedCategory === cat.id.toString() && styles.pickerChipTextActive
                       ]}>{cat.name}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Genre *</Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  style={styles.chipScroll}
+                  contentContainerStyle={styles.chipScrollContent}
+                >
+                  {GENRES.map((g) => (
+                    <TouchableOpacity
+                      key={g.value}
+                      style={[
+                        styles.pickerChip,
+                        genre === g.value && styles.pickerChipActive
+                      ]}
+                      onPress={() => setGenre(g.value)}
+                    >
+                      <Text style={[
+                        styles.pickerChipText,
+                        genre === g.value && styles.pickerChipTextActive
+                      ]}>{g.label}</Text>
                     </TouchableOpacity>
                   ))}
                 </ScrollView>
@@ -697,5 +818,27 @@ const styles = StyleSheet.create({
   },
   iconChipText: {
     fontSize: 28,
+  },
+  uploadButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#4299e1",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+  },
+  uploadButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  imagePreview: {
+    width: "100%",
+    height: 180,
+    borderRadius: 12,
+    marginTop: 12,
+    backgroundColor: "#2a2a2a",
   },
 });

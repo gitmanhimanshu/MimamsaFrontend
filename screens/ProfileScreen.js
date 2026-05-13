@@ -37,20 +37,17 @@ export default function ProfileScreen({ user, onBack, onUpdateUser }) {
       if (!result.canceled && result.assets && result.assets[0]) {
         setUploading(true);
         try {
-          const formData = new FormData();
-          formData.append('file', {
+          const fileBlob = {
             uri: result.assets[0].uri,
             type: 'image/jpeg',
-            name: `profile_${Date.now()}.jpg`
-          });
+            name: `profile_${Date.now()}.jpg`,
+          };
+          // Use the dedicated uploadImage helper which calls raw axios — the
+          // shared API instance defaults to application/json which strips the
+          // multipart boundary when reused for file uploads.
+          const data = await uploadImage(fileBlob);
 
-          const response = await API.post('/upload/image/', formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          });
-
-          setProfilePhoto(response.data.url);
+          setProfilePhoto(data.url);
           Alert.alert("✓ Success", "Profile photo uploaded!");
         } catch (err) {
           console.error("Upload error:", err);

@@ -8,6 +8,11 @@ import API from "../api";
 const { width, height } = Dimensions.get('window');
 
 export default function BookDetailScreen({ book, onBack, onNavigate }) {
+  // The "book" prop is actually any feed item (book / story / audiobook / video / image).
+  // The unified feed uses `type`; the /books/{id}/ detail uses no discriminator at all.
+  const contentType = book?.type || book?.content_type || "book";
+  const isBook = contentType === "book";
+
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -19,7 +24,7 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
   const [userReview, setUserReview] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
-  const [loadingReviews, setLoadingReviews] = useState(true);
+  const [loadingReviews, setLoadingReviews] = useState(isBook);
 
   // Social states
   const [liked, setLiked] = useState(book.user_liked || false);
@@ -48,20 +53,23 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
       }),
     ]).start();
 
-    // Load reviews
-    loadReviews();
+    // Reviews only exist for books and poems on the backend.
+    if (isBook) {
+      loadReviews();
+    }
   }, []);
 
   const loadReviews = async () => {
     try {
       setLoadingReviews(true);
       const response = await API.get(`/books/${book.id}/reviews/`);
-      setReviews(response.data);
-      
+      const reviewList = Array.isArray(response.data) ? response.data : [];
+      setReviews(reviewList);
+
       // Check if current user has reviewed
       const userId = await getUserId();
       if (userId) {
-        const userReviewData = response.data.find(r => r.user === parseInt(userId));
+        const userReviewData = reviewList.find(r => r.user === parseInt(userId));
         setUserReview(userReviewData || null);
       }
     } catch (error) {
@@ -163,7 +171,7 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
       setLikeCount((prev) => (newLiked ? prev + 1 : prev - 1));
       await API.post("/likes/toggle/", {
         user_id: userId,
-        content_type: "book",
+        content_type: contentType,
         content_id: book.id,
       });
     } catch (error) {
@@ -180,7 +188,7 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
       setSaved(newSaved);
       await API.post("/bookmarks/toggle/", {
         user_id: userId,
-        content_type: "book",
+        content_type: contentType,
         content_id: book.id,
       });
     } catch (error) {
@@ -224,10 +232,21 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
             }
           ]}
         >
-          {book.cover_image_url ? (
+          {book.cover_image_url ||
+          book.cover_image ||
+          book.thumbnail_url ||
+          book.image_url ||
+          book.background_image_url ? (
             <>
-              <Image 
-                source={{ uri: book.cover_image_url }} 
+              <Image
+                source={{
+                  uri:
+                    book.cover_image_url ||
+                    book.cover_image ||
+                    book.thumbnail_url ||
+                    book.image_url ||
+                    book.background_image_url,
+                }}
                 style={styles.coverImage}
                 resizeMode="cover"
               />
@@ -313,22 +332,63 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
             </View>
           )}
 
-          {/* Read Now Button */}
-          <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-            <TouchableOpacity 
-              style={styles.readButton}
-              onPress={openReader}
-              activeOpacity={0.9}
+          {/* Read Now Button — books only */}
+          {isBook && (
+            <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+              <TouchableOpacity
+                style={styles.readButton}
+                onPress={openReader}
+                activeOpacity={0.9}
+              >
+                <View style={styles.readButtonContent}>
+                  <Ionicons name={book.is_paid ? "card-outline" : "book-open-outline"} size={22} color={COLORS.white} />
+                  <Text style={styles.readButtonText}>
+                    {book.is_paid ? "Buy & Read Now" : "Read Now"}
+                  </Text>
+                  <Ionicons name="arrow-forward" size={20} color={COLORS.white} />
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+
+          {/* For non-book content, show the body text (poem.content / story.content) */}
+          {!isBook && book.content && (
+            <View style={styles.descriptionSection}>
+              <Text style={styles.description}>{book.content}</Text>
+            </View>
+          )}
+
+          {/* Social actions (like / save) — available for every content type */}
+          <View style={styles.socialRow}>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={toggleLike}
+              activeOpacity={0.7}
             >
-              <View style={styles.readButtonContent}>
-                <Ionicons name={book.is_paid ? "card-outline" : "book-open-outline"} size={22} color={COLORS.white} />
-                <Text style={styles.readButtonText}>
-                  {book.is_paid ? "Buy & Read Now" : "Read Now"}
-                </Text>
-                <Ionicons name="arrow-forward" size={20} color={COLORS.white} />
-              </View>
+              <Ionicons
+                name={liked ? "heart" : "heart-outline"}
+                size={22}
+                color={liked ? "#ef4444" : COLORS.textSecondary}
+              />
+              <Text style={[styles.socialText, liked && { color: "#ef4444", fontWeight: "700" }]}>
+                {likeCount > 0 ? likeCount : "Like"}
+              </Text>
             </TouchableOpacity>
-          </Animated.View>
+            <TouchableOpacity
+              style={styles.socialButton}
+              onPress={toggleBookmark}
+              activeOpacity={0.7}
+            >
+              <Ionicons
+                name={saved ? "bookmark" : "bookmark-outline"}
+                size={20}
+                color={saved ? COLORS.primary : COLORS.textSecondary}
+              />
+              <Text style={[styles.socialText, saved && { color: COLORS.primary, fontWeight: "700" }]}>
+                {saved ? "Saved" : "Save"}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           {/* File Type Info */}
           {book.file_type && (
@@ -340,7 +400,8 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
             </View>
           )}
 
-          {/* Reviews Section */}
+          {/* Reviews Section — books only (backend reviews are book/poem only) */}
+          {isBook && (
           <View style={styles.reviewsSection}>
             <View style={styles.reviewsHeader}>
               <Text style={styles.reviewsTitle}>Reviews & Ratings</Text>
@@ -428,6 +489,7 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
               </Text>
             )}
           </View>
+          )}
         </Animated.View>
 
         {/* Review Modal */}
@@ -767,5 +829,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 20,
     fontStyle: 'italic',
+  },
+  socialRow: {
+    flexDirection: 'row',
+    paddingVertical: SPACING.md,
+    marginTop: SPACING.sm,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.gray[100],
+    gap: SPACING.lg,
+  },
+  socialButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  socialText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.textSecondary,
   },
 });
