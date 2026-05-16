@@ -41,6 +41,22 @@ export default function PoemsScreen({ onBack, userId, onNavigate, initialPoem })
     }
   }, [selectedPoem, fadeAnim]);
 
+  // When opened via the feed, `initialPoem` is the slim feed projection — it
+  // lacks `category`, `genre`, `average_rating`, `review_count`. Re-fetch the
+  // full poem so the detail view + ratings render correctly.
+  useEffect(() => {
+    if (!initialPoem?.id) return;
+    if (initialPoem.average_rating !== undefined) return; // already full
+    (async () => {
+      try {
+        const res = await API.get(`/poems/${initialPoem.id}/`);
+        setSelectedPoem((prev) => (prev ? { ...prev, ...res.data } : res.data));
+      } catch (err) {
+        console.error("Error fetching full poem:", err);
+      }
+    })();
+  }, [initialPoem?.id, initialPoem?.average_rating]);
+
   useEffect(() => {
     if (selectedPoem) {
       loadReviews();

@@ -10,6 +10,9 @@ import {
   Animated,
   TextInput,
   RefreshControl,
+  Modal,
+  Linking,
+  Alert,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
@@ -39,6 +42,8 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
   const [fadeAnim] = useState(new Animated.Value(0));
   const [commentsTarget, setCommentsTarget] = useState(null);
   const commentDeltaRef = useRef(null);
+  // Fullscreen image overlay (mirrors web Home's selectedImage modal).
+  const [selectedImage, setSelectedImage] = useState(null);
 
   useEffect(() => {
     fetchFeed();
@@ -107,14 +112,36 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
     setFilteredFeed(filtered);
   };
 
-  const handleCardPress = (item) => {
+  const handleCardPress = async (item) => {
     const itemType = item.type || item.content_type;
     if (itemType === "book") {
       onNavigate("BookDetail", { book: item });
     } else if (itemType === "poem") {
       onNavigate("Poems", { poem: item });
+    } else if (itemType === "image") {
+      // Mirror web Home: image opens a fullscreen viewer.
+      setSelectedImage(item);
+    } else if (itemType === "video") {
+      // Feed projection has thumbnail_url as `cover_image` — the real video URL
+      // is only on the detail endpoint. Fetch then hand off to the OS (handles
+      // YouTube links + direct video files alike).
+      try {
+        const res = await API.get(`/videos/${item.id}/`);
+        const videoUrl = res.data?.video_url;
+        if (videoUrl) {
+          Linking.openURL(videoUrl).catch(() =>
+            Alert.alert("Cannot open", "Failed to open this video.")
+          );
+        } else {
+          Alert.alert("Unavailable", "No video URL on this item.");
+        }
+      } catch (err) {
+        console.error("Error fetching video:", err);
+        Alert.alert("Error", "Could not load this video.");
+      }
     } else {
-      // story / audiobook / video / image: reuse BookDetail for now (shows title + content + cover).
+      // story / audiobook: reuse BookDetail (shows title + content + cover +
+      // a Play button for audiobooks after BookDetail re-fetches the record).
       onNavigate("BookDetail", { book: item });
     }
   };
@@ -177,6 +204,16 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
           <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("Profile"); }}>
             <Ionicons name="person-outline" size={22} color={COLORS.primary} />
             <Text style={styles.drawerItemText}>Profile</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("Poems"); }}>
+            <Ionicons name="document-text-outline" size={22} color={COLORS.primary} />
+            <Text style={styles.drawerItemText}>Poems</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("AddUserPoem"); }}>
+            <Ionicons name="create-outline" size={22} color={COLORS.primary} />
+            <Text style={styles.drawerItemText}>Write a Poem</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.drawerItem} onPress={() => { setMenuVisible(false); onNavigate("SavedItems"); }}>
@@ -302,6 +339,44 @@ export default function HomeScreen({ user, onLogout, onNavigate }) {
           />
         </Animated.View>
       )}
+
+      {/* Fullscreen Image Viewer — matches web's selectedImage modal. */}
+      <Modal
+        visible={!!selectedImage}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setSelectedImage(null)}
+      >
+        <View style={styles.imageViewerBackdrop}>
+          <TouchableOpacity
+            style={styles.imageViewerClose}
+            onPress={() => setSelectedImage(null)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="close" size={24} color="#fff" />
+          </TouchableOpacity>
+          {selectedImage && (
+            <View style={styles.imageViewerInner}>
+              <Image
+                source={{
+                  uri:
+                    selectedImage.cover_image ||
+                    selectedImage.image_url ||
+                    selectedImage.cover_image_url,
+                }}
+                style={styles.imageViewerImage}
+                resizeMode="contain"
+              />
+              <View style={styles.imageViewerMeta}>
+                <Text style={styles.imageViewerTitle}>{selectedImage.title}</Text>
+                {selectedImage.author_name ? (
+                  <Text style={styles.imageViewerAuthor}>{selectedImage.author_name}</Text>
+                ) : null}
+              </View>
+            </View>
+          )}
+        </View>
+      </Modal>
 
       {/* Comments Modal */}
       <CommentsModal
@@ -506,5 +581,49 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     textTransform: "uppercase",
     marginVertical: SPACING.sm,
+  },
+  imageViewerBackdrop: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  imageViewerClose: {
+    position: "absolute",
+    top: 50,
+    left: 16,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
+  imageViewerInner: {
+    width: "100%",
+    alignItems: "center",
+    paddingHorizontal: SPACING.md,
+  },
+  imageViewerImage: {
+    width: "100%",
+    height: "75%",
+    aspectRatio: 1,
+  },
+  imageViewerMeta: {
+    marginTop: SPACING.lg,
+    alignItems: "center",
+    paddingHorizontal: SPACING.md,
+  },
+  imageViewerTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "700",
+    textAlign: "center",
+  },
+  imageViewerAuthor: {
+    color: "#d1d5db",
+    fontSize: 14,
+    marginTop: 4,
   },
 });

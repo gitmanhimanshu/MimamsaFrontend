@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Animated, Dimensions, ActivityIndicator } from "react-native";
+import { View, Text, Image, ScrollView, TouchableOpacity, StyleSheet, Animated, Dimensions, ActivityIndicator, Linking, Alert } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 import ReviewModal from "../components/ReviewModal";
@@ -7,11 +7,16 @@ import API from "../api";
 
 const { width, height } = Dimensions.get('window');
 
-export default function BookDetailScreen({ book, onBack, onNavigate }) {
+export default function BookDetailScreen({ book: initialBook, onBack, onNavigate }) {
   // The "book" prop is actually any feed item (book / story / audiobook / video / image).
   // The unified feed uses `type`; the /books/{id}/ detail uses no discriminator at all.
-  const contentType = book?.type || book?.content_type || "book";
+  const contentType = initialBook?.type || initialBook?.content_type || "book";
   const isBook = contentType === "book";
+
+  // The feed returns a slim projection (no `content_url`, no `file_type`, no
+  // `price`, etc.). Re-fetch the full record for books so "Read Now" works —
+  // mirrors web BookDetail's fetchBookDetails().
+  const [book, setBook] = useState(initialBook);
 
   // Animation values
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -27,9 +32,9 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
   const [loadingReviews, setLoadingReviews] = useState(isBook);
 
   // Social states
-  const [liked, setLiked] = useState(book.user_liked || false);
-  const [saved, setSaved] = useState(book.user_saved || false);
-  const [likeCount, setLikeCount] = useState(book.like_count || 0);
+  const [liked, setLiked] = useState(initialBook?.user_liked || false);
+  const [saved, setSaved] = useState(initialBook?.user_saved || false);
+  const [likeCount, setLikeCount] = useState(initialBook?.like_count || 0);
 
   useEffect(() => {
     // Entrance animations
@@ -52,6 +57,26 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
         useNativeDriver: true,
       }),
     ]).start();
+
+    // Refetch the full record — the feed projection drops fields like
+    // `content_url` (book), `audio_url` (audiobook), `content` (short story).
+    // Keep social counters from the feed item so the UI doesn't flicker.
+    const DETAIL_BY_TYPE = {
+      book: "/books/",
+      story: "/short-stories/",
+      audiobook: "/audiobooks/",
+    };
+    const detailPath = DETAIL_BY_TYPE[contentType];
+    if (detailPath && initialBook?.id) {
+      (async () => {
+        try {
+          const res = await API.get(`${detailPath}${initialBook.id}/`);
+          setBook((prev) => ({ ...prev, ...res.data }));
+        } catch (err) {
+          console.error(`Error fetching ${contentType} details:`, err);
+        }
+      })();
+    }
 
     // Reviews only exist for books and poems on the backend.
     if (isBook) {
@@ -150,17 +175,38 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
   const openReader = () => {
     animateButton();
     setTimeout(() => {
-      if (book.content_url) {
-        const url = book.content_url.toLowerCase();
-        if (url.includes('.pdf') || url.includes('.epub')) {
-          onNavigate("Reader", { book });
-        } else {
-          alert("Opening file in browser...");
-        }
+      if (!book.content_url) {
+        Alert.alert("Unavailable", "No file is attached to this book yet.");
+        return;
+      }
+      // Use the explicit file_type when available, otherwise sniff the URL.
+      const ft = (book.file_type || "").toLowerCase();
+      const urlLower = book.content_url.toLowerCase();
+      const isInline =
+        ft === "pdf" || ft === "epub" ||
+        urlLower.includes(".pdf") || urlLower.includes(".epub");
+
+      if (isInline) {
+        onNavigate("Reader", { book });
       } else {
-        alert("No file available to read");
+        // Other formats (mobi/txt/raw download) — open externally.
+        Linking.openURL(book.content_url).catch(() => {
+          Alert.alert("Cannot open", "Failed to open this file.");
+        });
       }
     }, 200);
+  };
+
+  const openAudio = () => {
+    animateButton();
+    if (!book.audio_url) {
+      Alert.alert("Unavailable", "This audiobook has no audio file yet.");
+      return;
+    }
+    // Hand off to the OS — handles direct .mp3 URLs and most streaming hosts.
+    Linking.openURL(book.audio_url).catch(() => {
+      Alert.alert("Cannot open", "Failed to open this audiobook.");
+    });
   };
 
   const toggleLike = async () => {
@@ -351,8 +397,29 @@ export default function BookDetailScreen({ book, onBack, onNavigate }) {
             </Animated.View>
           )}
 
-          {/* For non-book content, show the body text (poem.content / story.content) */}
-          {!isBook && book.content && (
+          {/* Play button — audiobooks only. Opens audio_url externally. */}
+          {contentType === "audiobook" && (
+            <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+              <TouchableOpacity
+                style={styles.readButton}
+                onPress={openAudio}
+                activeOpacity={0.9}
+                disabled={!book.audio_url}
+              >
+                <View style={styles.readButtonContent}>
+                  <Ionicons name="play-circle-outline" size={22} color={COLORS.white} />
+                  <Text style={styles.readButtonText}>
+                    {book.audio_url ? "Play Audiobook" : "No audio available"}
+                  </Text>
+                  <Ionicons name="headset-outline" size={20} color={COLORS.white} />
+                </View>
+              </TouchableOpacity>
+            </Animated.View>
+          )}
+
+          {/* For short stories, show the body text. Audiobooks/videos/images
+              don't have a `content` field, so this block stays hidden for them. */}
+          {!isBook && contentType !== "audiobook" && book.content && (
             <View style={styles.descriptionSection}>
               <Text style={styles.description}>{book.content}</Text>
             </View>
