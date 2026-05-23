@@ -115,6 +115,18 @@ export default function FeedCard({ item, userId, onPress, onComment }) {
             {item.description}
           </Text>
         )}
+
+        {/* Full poem text on the feed card — feed projection already returns
+            the entire content for poems (see UnifiedFeedView raw SQL).
+            For short stories, show a preview only (their content can be long). */}
+        {contentType === "poem" && item.content ? (
+          <Text style={styles.poemContent}>{item.content}</Text>
+        ) : null}
+        {contentType === "story" && item.content ? (
+          <Text style={styles.storyPreview} numberOfLines={6}>
+            {item.content}
+          </Text>
+        ) : null}
       </View>
 
       {/* Action Bar */}
@@ -233,6 +245,22 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 14,
     lineHeight: 20,
+  },
+  poemContent: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textPrimary,
+    fontSize: 15,
+    lineHeight: 26,
+    fontStyle: "italic",
+    fontFamily: "serif",
+    marginTop: SPACING.sm,
+  },
+  storyPreview: {
+    ...TYPOGRAPHY.body,
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    lineHeight: 22,
+    marginTop: SPACING.sm,
   },
   actionBar: {
     flexDirection: "row",
