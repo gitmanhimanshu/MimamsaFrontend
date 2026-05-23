@@ -5,7 +5,7 @@ import * as ImagePicker from "expo-image-picker";
 import API, { uploadImage } from "../api";
 import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constants/theme";
 
-export default function ProfileScreen({ user, onBack, onUpdateUser }) {
+export default function ProfileScreen({ user, onBack, onUpdateUser, onNavigate }) {
   const [username, setUsername] = useState(user.username);
   const [email, setEmail] = useState(user.email);
   const [profilePhoto, setProfilePhoto] = useState(user.profile_photo || "");
@@ -176,6 +176,29 @@ export default function ProfileScreen({ user, onBack, onUpdateUser }) {
               </Text>
             </View>
           </View>
+
+          {/* Quick link to user's own poems — discoverability fix so users can
+              find content they authored without scrolling the full poems feed. */}
+          {onNavigate && (
+            <TouchableOpacity
+              style={styles.myPoemsLink}
+              onPress={() => onNavigate('Poems', { showMyPoems: true })}
+              activeOpacity={0.85}
+            >
+              <View style={styles.myPoemsLinkRow}>
+                <View style={styles.myPoemsLinkIcon}>
+                  <Ionicons name="create-outline" size={22} color="#fff" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.myPoemsLinkTitle}>My Poems</Text>
+                  <Text style={styles.myPoemsLinkSubtitle}>
+                    View &amp; manage poems you have written
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={22} color={COLORS.primary} />
+              </View>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={[styles.saveButton, (saving || uploading) && styles.saveButtonDisabled]}
@@ -388,6 +411,40 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: COLORS.textSecondary,
     letterSpacing: 0.3,
+  },
+  myPoemsLink: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 14,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  myPoemsLinkRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  myPoemsLinkIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  myPoemsLinkTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: COLORS.textPrimary,
+  },
+  myPoemsLinkSubtitle: {
+    fontSize: 12,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   saveButton: {
     backgroundColor: COLORS.primary,

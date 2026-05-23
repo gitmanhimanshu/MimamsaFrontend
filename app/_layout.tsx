@@ -235,8 +235,8 @@ export default function RootLayout() {
   // User is logged in, show app screens
   switch (currentScreen) {
     case "Profile":
-      return <ProfileScreen user={user} onBack={handleBack} onUpdateUser={handleUpdateUser} />;
-    
+      return <ProfileScreen user={user} onBack={handleBack} onUpdateUser={handleUpdateUser} onNavigate={handleNavigate} />;
+
     case "Poems":
       return (
         <PoemsScreen
@@ -244,6 +244,7 @@ export default function RootLayout() {
           userId={user?.id}
           onNavigate={handleNavigate}
           initialPoem={screenData?.poem}
+          initialShowMyPoems={screenData?.showMyPoems}
         />
       );
     

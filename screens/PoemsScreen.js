@@ -7,14 +7,15 @@ import { COLORS, SPACING, TYPOGRAPHY, SHADOWS, BORDER_RADIUS } from "../constant
 
 const { width } = Dimensions.get('window');
 
-export default function PoemsScreen({ onBack, userId, onNavigate, initialPoem }) {
+export default function PoemsScreen({ onBack, userId, onNavigate, initialPoem, initialShowMyPoems }) {
   const [categories, setCategories] = useState([]);
   const [poems, setPoems] = useState([]);
   const [myPoems, setMyPoems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState(null);
   const [selectedPoem, setSelectedPoem] = useState(initialPoem || null);
   const [loading, setLoading] = useState(true);
-  const [showMyPoems, setShowMyPoems] = useState(false);
+  // Allow deep-linking from Profile → "My Poems" via screenData.showMyPoems.
+  const [showMyPoems, setShowMyPoems] = useState(!!initialShowMyPoems);
   const fadeAnim = useRef(new Animated.Value(1)).current;
 
   // Review states
@@ -363,29 +364,39 @@ export default function PoemsScreen({ onBack, userId, onNavigate, initialPoem })
       </View>
 
       <ScrollView style={styles.content}>
-        {/* My Poems Section */}
-        {myPoems.length > 0 && (
-          <View style={styles.myPoemsSection}>
-            <TouchableOpacity
-              style={styles.myPoemsCard}
-              onPress={() => {
-                setShowMyPoems(!showMyPoems);
-                setSelectedCategory(null);
-              }}
-            >
-              <View style={styles.myPoemsHeader}>
-                <View style={styles.myPoemsIcon}>
-                  <Ionicons name="create-outline" size={18} color="#fff" />
-                </View>
-                <View style={styles.myPoemsInfo}>
-                  <Text style={styles.myPoemsTitle}>My Poems</Text>
-                  <Text style={styles.myPoemsCount}>{myPoems.length} poems written by you</Text>
-                </View>
+        {/* My Poems Section — always visible so users can discover where their
+            own poems live, even before they've written one. */}
+        <View style={styles.myPoemsSection}>
+          <TouchableOpacity
+            style={styles.myPoemsCard}
+            onPress={() => {
+              if (myPoems.length === 0) {
+                // No poems yet — send the user straight to the editor.
+                onNavigate && onNavigate('AddUserPoem');
+                return;
+              }
+              setShowMyPoems(!showMyPoems);
+              setSelectedCategory(null);
+            }}
+          >
+            <View style={styles.myPoemsHeader}>
+              <View style={styles.myPoemsIcon}>
+                <Ionicons name="create-outline" size={18} color="#fff" />
               </View>
-              <Text style={styles.myPoemsArrow}>{showMyPoems ? '▼' : '▶'}</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+              <View style={styles.myPoemsInfo}>
+                <Text style={styles.myPoemsTitle}>My Poems</Text>
+                <Text style={styles.myPoemsCount}>
+                  {myPoems.length > 0
+                    ? `${myPoems.length} ${myPoems.length === 1 ? 'poem' : 'poems'} written by you`
+                    : "You haven't written any poems yet — tap to start"}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.myPoemsArrow}>
+              {myPoems.length === 0 ? '+' : showMyPoems ? '▼' : '▶'}
+            </Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Categories */}
         {!showMyPoems && (
@@ -452,7 +463,21 @@ export default function PoemsScreen({ onBack, userId, onNavigate, initialPoem })
           ) : getFilteredPoems().length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="document-text-outline" size={48} color={COLORS.textMuted} />
-              <Text style={styles.emptyText}>कोई कविता नहीं मिली</Text>
+              <Text style={styles.emptyText}>
+                {showMyPoems
+                  ? "You haven't written any poems yet"
+                  : 'कोई कविता नहीं मिली'}
+              </Text>
+              {showMyPoems && (
+                <TouchableOpacity
+                  style={styles.emptyCta}
+                  onPress={() => onNavigate && onNavigate('AddUserPoem')}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="create-outline" size={18} color="#fff" />
+                  <Text style={styles.emptyCtaText}>Write Your First Poem</Text>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             getFilteredPoems().map((poem) => (
@@ -730,6 +755,21 @@ const styles = StyleSheet.create({
   emptyText: {
     color: "#666",
     fontSize: 16,
+  },
+  emptyCta: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 16,
+    backgroundColor: "#FF7700",
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 24,
+  },
+  emptyCtaText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
   },
   // Poem Detail Styles
   poemHeader: {
