@@ -210,10 +210,6 @@ export default function StoryViewerScreen({ userId, viewerId, onClose }) {
             <Ionicons name="trash-outline" size={20} color={COLORS.error} />
           </TouchableOpacity>
         )}
-        <View style={styles.viewerCount}>
-          <Ionicons name="eye-outline" size={14} color="rgba(255,255,255,0.7)" />
-          <Text style={styles.viewerCountText}>{currentStory?.viewer_count || 0}</Text>
-        </View>
       </View>
 
       {/* Story Content with Touch Handlers */}
@@ -267,6 +263,14 @@ export default function StoryViewerScreen({ userId, viewerId, onClose }) {
           <Text style={styles.pauseText}>Paused</Text>
         </View>
       )}
+
+      {/* Viewer count — bottom of screen */}
+      <View style={styles.viewerCountBottom} pointerEvents="none">
+        <Ionicons name="eye-outline" size={18} color={COLORS.white} />
+        <Text style={styles.viewerCountBottomText}>
+          {currentStory?.viewer_count || 0}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -366,6 +370,24 @@ const styles = StyleSheet.create({
   viewerCountText: {
     ...TYPOGRAPHY.small,
     color: "rgba(255,255,255,0.7)",
+  },
+  viewerCountBottom: {
+    position: "absolute",
+    bottom: 30,
+    left: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    borderRadius: BORDER_RADIUS.full,
+    zIndex: 50,
+  },
+  viewerCountBottomText: {
+    ...TYPOGRAPHY.caption,
+    color: COLORS.white,
+    fontWeight: "700",
   },
   contentContainer: {
     width: width,

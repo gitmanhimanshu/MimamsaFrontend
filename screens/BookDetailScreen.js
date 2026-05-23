@@ -36,6 +36,10 @@ export default function BookDetailScreen({ book: initialBook, onBack, onNavigate
   const [saved, setSaved] = useState(initialBook?.user_saved || false);
   const [likeCount, setLikeCount] = useState(initialBook?.like_count || 0);
 
+  // Tracks the detail fetch so "Read Now" can wait instead of false-negative
+  // "Unavailable" when user taps before content_url has loaded from the feed projection.
+  const [detailLoading, setDetailLoading] = useState(false);
+
   useEffect(() => {
     // Entrance animations
     Animated.parallel([
@@ -68,12 +72,15 @@ export default function BookDetailScreen({ book: initialBook, onBack, onNavigate
     };
     const detailPath = DETAIL_BY_TYPE[contentType];
     if (detailPath && initialBook?.id) {
+      setDetailLoading(true);
       (async () => {
         try {
           const res = await API.get(`${detailPath}${initialBook.id}/`);
           setBook((prev) => ({ ...prev, ...res.data }));
         } catch (err) {
           console.error(`Error fetching ${contentType} details:`, err);
+        } finally {
+          setDetailLoading(false);
         }
       })();
     }
@@ -175,26 +182,77 @@ export default function BookDetailScreen({ book: initialBook, onBack, onNavigate
   const openReader = () => {
     animateButton();
     setTimeout(() => {
-      if (!book.content_url) {
-        Alert.alert("Unavailable", "No file is attached to this book yet.");
+      // If detail fetch hasn't completed yet, ask user to wait instead of
+      // falsely reporting "Unavailable" (the feed projection drops content_url).
+      if (detailLoading) {
+        Alert.alert("Loading", "Please wait a moment, the book is still loading.");
         return;
       }
-      // Use the explicit file_type when available, otherwise sniff the URL.
-      const ft = (book.file_type || "").toLowerCase();
-      const urlLower = book.content_url.toLowerCase();
-      const isInline =
-        ft === "pdf" || ft === "epub" ||
-        urlLower.includes(".pdf") || urlLower.includes(".epub");
 
-      if (isInline) {
-        onNavigate("Reader", { book });
-      } else {
-        // Other formats (mobi/txt/raw download) — open externally.
-        Linking.openURL(book.content_url).catch(() => {
-          Alert.alert("Cannot open", "Failed to open this file.");
-        });
+      const url = book.content_url || "";
+      const ft = (book.file_type || "").toLowerCase();
+
+      // Case 1: No URL at all — truly missing file.
+      if (!url) {
+        Alert.alert(
+          "Not Available",
+          "This book has no readable file uploaded yet. Please try another book.",
+          [{ text: "OK" }]
+        );
+        return;
       }
+
+      const urlLower = url.toLowerCase();
+      // Strip query/hash so signed Cloudinary URLs still match extensions.
+      const urlPath = urlLower.split("?")[0].split("#")[0];
+
+      const isPdf = ft === "pdf" || urlPath.endsWith(".pdf") || urlPath.includes(".pdf");
+      const isEpub = ft === "epub" || urlPath.endsWith(".epub") || urlPath.includes(".epub");
+      const isKnownExternal =
+        ft === "mobi" || ft === "txt" || urlPath.endsWith(".mobi") || urlPath.endsWith(".txt");
+
+      // Case 2: PDF/EPUB — use in-app reader.
+      if (isPdf || isEpub) {
+        onNavigate("Reader", { book: { ...book, file_type: isPdf ? "pdf" : "epub" } });
+        return;
+      }
+
+      // Case 3: Known external formats (mobi/txt) — open in browser/app.
+      if (isKnownExternal) {
+        openExternally(url);
+        return;
+      }
+
+      // Case 4: Unknown extension or raw Cloudinary URL — let user choose.
+      // Cloudinary 'raw' uploads sometimes lose extension; in-app reader (PDF.js)
+      // can still parse them. Default to trying in-app, with a browser fallback.
+      Alert.alert(
+        "Open Book",
+        "We couldn't detect the file format. How would you like to open it?",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Open in Browser",
+            onPress: () => openExternally(url),
+          },
+          {
+            text: "Try In-App Reader",
+            onPress: () =>
+              onNavigate("Reader", { book: { ...book, file_type: ft || "pdf" } }),
+          },
+        ]
+      );
     }, 200);
+  };
+
+  const openExternally = (url) => {
+    Linking.openURL(url).catch(() => {
+      Alert.alert(
+        "Cannot Open",
+        "Failed to open this file. The link may be broken.",
+        [{ text: "OK" }]
+      );
+    });
   };
 
   const openAudio = () => {

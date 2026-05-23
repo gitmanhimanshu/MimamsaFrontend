@@ -151,11 +151,13 @@ export default function CreateStoryScreen({ user, onBack, onSuccess }) {
             </View>
           ) : null}
 
-          {/* Change image button */}
+          {/* Change image button - DISABLED on mobile (kept for future use) */}
+          {/*
           <TouchableOpacity style={styles.changeImageButton} onPress={pickImage} activeOpacity={0.8}>
             <Ionicons name="image-outline" size={16} color={COLORS.white} />
             <Text style={styles.changeImageText}>{imageUrl ? "Change" : "Add Image"}</Text>
           </TouchableOpacity>
+          */}
         </View>
 
         {/* Caption Input */}

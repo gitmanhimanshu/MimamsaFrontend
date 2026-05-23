@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Dimensions } from "react-native";
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Dimensions, Linking, Alert } from "react-native";
 import { WebView } from "react-native-webview";
 
 const { width, height } = Dimensions.get('window');
@@ -7,10 +7,16 @@ const { width, height } = Dimensions.get('window');
 export default function ReaderScreen({ book, onBack }) {
   const [loading, setLoading] = useState(true);
   const [totalPages, setTotalPages] = useState(0);
-  
+
   const fileUrl = book.content_url || "";
-  const isEpub = fileUrl.toLowerCase().includes('.epub');
-  const isPdf = fileUrl.toLowerCase().includes('.pdf');
+  // Trust the explicit file_type first (set by BookDetailScreen.openReader),
+  // then sniff the URL path (stripping query/hash so signed URLs still match),
+  // and finally fall back to PDF — most uploaded ebooks are PDFs and PDF.js
+  // will display a clean error if the bytes aren't valid PDF.
+  const ft = (book.file_type || "").toLowerCase();
+  const urlPath = fileUrl.toLowerCase().split("?")[0].split("#")[0];
+  const isEpub = ft === "epub" || urlPath.includes(".epub");
+  const isPdf = ft === "pdf" || urlPath.includes(".pdf") || (!isEpub && !!fileUrl);
   
   // Create HTML with PDF.js viewer - ALL PAGES SCROLLABLE
   const createPDFViewerHTML = (url) => {
@@ -271,11 +277,29 @@ export default function ReaderScreen({ book, onBack }) {
     </html>
   `;
 
+  const openInBrowser = () => {
+    Linking.openURL(fileUrl).catch(() => {
+      Alert.alert("Cannot Open", "Failed to open this file in browser.");
+    });
+  };
+
   const handleMessage = (event) => {
     try {
       const data = JSON.parse(event.nativeEvent.data);
       if (data.pages) {
         setTotalPages(data.pages);
+      }
+      // PDF.js failed (corrupt bytes, CORS, raw Cloudinary URL without .pdf,
+      // unknown format that we defaulted to PDF). Offer browser fallback.
+      if (data.error) {
+        Alert.alert(
+          "Cannot Display",
+          "This file could not be opened in the in-app reader.",
+          [
+            { text: "Go Back", style: "cancel", onPress: onBack },
+            { text: "Open in Browser", onPress: openInBrowser },
+          ]
+        );
       }
     } catch (e) {
       console.log("Message parse error:", e);
